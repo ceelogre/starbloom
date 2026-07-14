@@ -37,3 +37,16 @@
 .secondary:hover {
   box-shadow: var(--shadow-md);
 }
+
+.button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.button:disabled:hover {
+  box-shadow: var(--shadow-sm);
+}
+
+.primary:disabled:hover {
+  background-color: var(--color-primary);
+}

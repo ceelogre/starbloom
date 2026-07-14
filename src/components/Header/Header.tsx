@@ -1,24 +1,24 @@
 import styles from './Header.module.css'
 
-const navItems = [
-  { label: 'Docs', href: '#' },
-  { label: 'Components', href: '#' },
-  { label: 'GitHub', href: 'https://github.com' },
-]
+type HeaderProps = {
+  cartCount: number
+  onCartClick: () => void
+}
 
-export function Header() {
+export function Header({ cartCount, onCartClick }: HeaderProps) {
   return (
     <header className={styles.header}>
-      <a href="/" className={styles.brand}>
-        Starbloom
-      </a>
-      <nav className={styles.nav} aria-label="Main">
-        {navItems.map((item) => (
-          <a key={item.label} href={item.href} className={styles.navLink}>
-            {item.label}
-          </a>
-        ))}
-      </nav>
+      <span className={styles.brand}>Starbloom</span>
+      <button
+        type="button"
+        className={styles.cartButton}
+        onClick={onCartClick}
+        disabled={cartCount === 0}
+        aria-label={`View cart with ${cartCount} items`}
+      >
+        Cart
+        {cartCount > 0 ? <span className={styles.cartBadge}>{cartCount}</span> : null}
+      </button>
     </header>
   )
 }

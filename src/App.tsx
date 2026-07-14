@@ -1,32 +1,28 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import styles from './App.module.css'
-import { Button } from './components/Button/Button'
 import { Header } from './components/Header/Header'
+import { OrderFlow, type OrderStep } from './components/OrderFlow/OrderFlow'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [cartCount, setCartCount] = useState(0)
+  const [requestedStep, setRequestedStep] = useState<OrderStep | null>(null)
+
+  const handleRequestedStepHandled = useCallback(() => {
+    setRequestedStep(null)
+  }, [])
 
   return (
     <div className={styles.layout}>
-      <Header />
+      <Header
+        cartCount={cartCount}
+        onCartClick={() => setRequestedStep('cart')}
+      />
       <main className={styles.main}>
-        <section className={styles.hero}>
-          <h1 className={styles.title}>Starbloom</h1>
-          <p className={styles.subtitle}>
-            A TypeScript frontend template with CSS Modules. Edit{' '}
-            <code>src/App.tsx</code> to get started.
-          </p>
-          <div className={styles.actions}>
-            <Button onClick={() => setCount((value) => value + 1)}>
-              Count is {count}
-            </Button>
-            <Button variant="secondary">Learn more</Button>
-          </div>
-          <div className={styles.card}>
-            <p className={styles.cardLabel}>Hot reload</p>
-            <p className={styles.cardValue}>Ready</p>
-          </div>
-        </section>
+        <OrderFlow
+          onCartChange={setCartCount}
+          requestedStep={requestedStep}
+          onRequestedStepHandled={handleRequestedStepHandled}
+        />
       </main>
     </div>
   )
