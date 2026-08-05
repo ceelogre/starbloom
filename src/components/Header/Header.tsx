@@ -1,3 +1,4 @@
+import { AppearanceToggle } from '../AppearanceToggle/AppearanceToggle'
 import styles from './Header.module.css'
 
 type HeaderProps = {
@@ -9,16 +10,19 @@ export function Header({ cartCount, onCartClick }: HeaderProps) {
   return (
     <header className={styles.header}>
       <span className={styles.brand}>Starbloom</span>
-      <button
-        type="button"
-        className={styles.cartButton}
-        onClick={onCartClick}
-        disabled={cartCount === 0}
-        aria-label={`View cart with ${cartCount} items`}
-      >
-        Cart
-        {cartCount > 0 ? <span className={styles.cartBadge}>{cartCount}</span> : null}
-      </button>
+      <div className={styles.actions}>
+        <AppearanceToggle />
+        <button
+          type="button"
+          className={styles.cartButton}
+          onClick={onCartClick}
+          disabled={cartCount === 0}
+          aria-label={`View cart with ${cartCount} items`}
+        >
+          Cart
+          {cartCount > 0 ? <span className={styles.cartBadge}>{cartCount}</span> : null}
+        </button>
+      </div>
     </header>
   )
 }

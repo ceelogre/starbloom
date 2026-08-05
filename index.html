@@ -1,10 +1,28 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-mode="light">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Starbloom</title>
+    <meta name="theme-color" content="#fdfaf5" />
+    <title>Starbloom — Meat Orders</title>
+    <script>
+      // Applies the stored appearance before first paint. Key must match
+      // src/theme/theme-context.ts.
+      ;(function () {
+        try {
+          var preference = localStorage.getItem('starbloom.color-mode')
+          if (preference !== 'light' && preference !== 'dark') {
+            preference = window.matchMedia('(prefers-color-scheme: dark)').matches
+              ? 'dark'
+              : 'light'
+          }
+          document.documentElement.dataset.mode = preference
+        } catch (error) {
+          /* Fall back to the attribute already on <html>. */
+        }
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -2,51 +2,56 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  padding: 0.625rem 1.25rem;
-  border: none;
+  gap: var(--space-2);
+  min-height: var(--tap-target-min);
+  padding: var(--space-3) var(--space-5);
+  border: 1px solid transparent;
   border-radius: var(--radius-sm);
   font-family: inherit;
-  font-size: 0.9375rem;
-  font-weight: 500;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-tight);
   cursor: pointer;
-  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+  transition: background-color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
 }
 
-.button:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+.button:active:not(:disabled) {
+  transform: translateY(1px);
 }
 
 .primary {
   color: var(--color-primary-text);
   background-color: var(--color-primary);
+  border-color: var(--color-primary-border);
+  box-shadow: var(--shadow-sm);
 }
 
-.primary:hover {
+.primary:hover:not(:disabled) {
   background-color: var(--color-primary-hover);
+  box-shadow: var(--shadow-md);
+}
+
+.primary:active:not(:disabled) {
+  background-color: var(--color-primary-active);
 }
 
 .secondary {
   color: var(--color-text);
   background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-sm);
+  border-color: var(--color-border-strong);
+  box-shadow: var(--shadow-xs);
 }
 
-.secondary:hover {
-  box-shadow: var(--shadow-md);
+.secondary:hover:not(:disabled) {
+  border-color: var(--color-text-muted);
+  background-color: var(--color-surface-sunken);
 }
 
 .button:disabled {
   opacity: 0.55;
   cursor: not-allowed;
-}
-
-.button:disabled:hover {
-  box-shadow: var(--shadow-sm);
-}
-
-.primary:disabled:hover {
-  background-color: var(--color-primary);
+  box-shadow: none;
 }

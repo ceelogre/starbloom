@@ -9,6 +9,8 @@ import type {
   DeliveryDetails,
   OrderStep,
 } from '../../types/order'
+import heroImageWebp from '../../assets/startb3.webp'
+import heroImageJpg from '../../assets/startb3.jpg'
 import styles from './OrderFlow.module.css'
 
 type OrderFlowProps = {
@@ -159,6 +161,18 @@ export function OrderFlow({
           <Button onClick={startOrder}>Start ordering</Button>
         }
       >
+        <div className={styles.heroMedia}>
+          <picture>
+            <source srcSet={heroImageWebp} type="image/webp" />
+            <img
+              className={styles.heroImage}
+              src={heroImageJpg}
+              alt="A sealed Starbloom delivery box carrying a fresh sausage order."
+              width={1200}
+              height={960}
+            />
+          </picture>
+        </div>
         <div className={styles.heroCard}>
           <p className={styles.heroLabel}>How it works</p>
           <ol className={styles.stepsList}>

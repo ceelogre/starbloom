@@ -1,0 +1,106 @@
+/*
+ * Primitives and brand constants. Values here never change between color
+ * modes — only the semantic color tokens in theme.css do.
+ */
+
+:root {
+  --space-0: 0;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+
+  --font-size-2xs: 0.6875rem;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: clamp(1.75rem, 4vw, 2.25rem);
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-black: 800;
+
+  --line-height-tight: 1.15;
+  --line-height-snug: 1.3;
+  --line-height-base: 1.5;
+  --line-height-relaxed: 1.65;
+
+  --letter-spacing-tighter: -0.03em;
+  --letter-spacing-tight: -0.015em;
+  --letter-spacing-normal: 0;
+  --letter-spacing-wide: 0.04em;
+
+  /* Body text stays on the system sans: it costs nothing to load and reads as
+   * native. Only the display face is self-hosted. */
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  /* Fallbacks are ordered to keep an old-style serif on screen during the swap;
+   * without Charter and Liberation Serif this lands on DejaVu, which is far too
+   * wide and modern for the look the theme is built around. */
+  --font-display: 'Fraunces Variable', 'Iowan Old Style', Charter, 'Bitstream Charter',
+    'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, 'Liberation Serif', serif;
+  --font-mono: ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace;
+
+  --display-weight: var(--font-weight-bold);
+  --display-letter-spacing: var(--letter-spacing-normal);
+
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 26px;
+  --radius-full: 999px;
+
+  --duration-fast: 120ms;
+  --duration-base: 180ms;
+  --duration-slow: 280ms;
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized: cubic-bezier(0.2, 0, 0, 1.3);
+
+  /*
+   * Composed from per-mode --shadow-color, --shadow-strength-* and
+   * --elevation-highlight, so warm shadows and the dark-mode lit top edge apply
+   * everywhere a shadow token is used without each component opting in.
+   */
+  --shadow-xs: var(--elevation-highlight),
+    0 1px 2px 0 rgb(var(--shadow-color) / var(--shadow-strength-low));
+  --shadow-sm: var(--elevation-highlight),
+    0 1px 3px 0 rgb(var(--shadow-color) / var(--shadow-strength-low)),
+    0 1px 2px -1px rgb(var(--shadow-color) / var(--shadow-strength-low));
+  --shadow-md: var(--elevation-highlight),
+    0 4px 12px -2px rgb(var(--shadow-color) / var(--shadow-strength-mid)),
+    0 2px 4px -2px rgb(var(--shadow-color) / var(--shadow-strength-low));
+  --shadow-lg: var(--elevation-highlight),
+    0 12px 28px -6px rgb(var(--shadow-color) / var(--shadow-strength-high)),
+    0 4px 10px -4px rgb(var(--shadow-color) / var(--shadow-strength-mid));
+
+  --container-sm: 32rem;
+  --container-md: 48rem;
+  --container-lg: 64rem;
+
+  --tap-target-min: 2.75rem;
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+
+  --z-header: 100;
+  --z-popover: 200;
+  --z-modal: 300;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-base: 0ms;
+    --duration-slow: 0ms;
+  }
+}
