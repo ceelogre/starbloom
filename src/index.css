@@ -4,6 +4,7 @@
 @import '@fontsource-variable/fraunces';
 @import './styles/tokens.css';
 @import './styles/theme.css';
+@import './styles/transitions.css';
 
 *,
 *::before,

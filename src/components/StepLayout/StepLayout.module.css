@@ -1,7 +1,33 @@
+@keyframes stepEnter {
+  from {
+    opacity: 0;
+    transform: translateY(0.4rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .step {
   width: 100%;
   max-width: var(--container-sm);
   margin: 0 auto;
+  /* Fallback when the View Transitions API is unavailable. */
+  animation: stepEnter var(--duration-page-in) var(--ease-out);
+}
+
+@supports (view-transition-name: none) {
+  .step {
+    animation: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .step {
+    animation: none;
+  }
 }
 
 .header {

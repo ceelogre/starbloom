@@ -1,4 +1,3 @@
-import { AppearanceToggle } from '../AppearanceToggle/AppearanceToggle'
 import styles from './Header.module.css'
 
 type HeaderProps = {
@@ -11,7 +10,6 @@ export function Header({ cartCount, onCartClick }: HeaderProps) {
     <header className={styles.header}>
       <span className={styles.brand}>Starbloom</span>
       <div className={styles.actions}>
-        <AppearanceToggle />
         <button
           type="button"
           className={styles.cartButton}

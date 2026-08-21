@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { Button } from '../Button/Button'
 import { SelectionCard } from '../SelectionCard/SelectionCard'
 import { StepLayout } from '../StepLayout/StepLayout'
@@ -17,6 +18,16 @@ type OrderFlowProps = {
   onCartChange: (count: number) => void
   requestedStep: OrderStep | null
   onRequestedStepHandled: () => void
+}
+
+const STEP_ORDER: Record<OrderStep, number> = {
+  home: 0,
+  category: 1,
+  product: 2,
+  quantity: 3,
+  cart: 4,
+  delivery: 5,
+  confirmation: 6,
 }
 
 function createCartItemId() {
@@ -47,8 +58,30 @@ export function OrderFlow({
     address: '',
     instructions: '',
   })
+  const stepRef = useRef(step)
+  stepRef.current = step
 
   const selectedProduct = MEAT_PRODUCTS.find((product) => product.id === selectedProductId)
+
+  const navigate = useCallback((next: OrderStep, prepare?: () => void) => {
+    const current = stepRef.current
+    document.documentElement.dataset.navDirection =
+      STEP_ORDER[next] >= STEP_ORDER[current] ? 'forward' : 'back'
+
+    const update = () => {
+      flushSync(() => {
+        prepare?.()
+        setStep(next)
+      })
+    }
+
+    if (typeof document.startViewTransition === 'function') {
+      document.startViewTransition(update)
+      return
+    }
+
+    update()
+  }, [])
 
   function resetSelection() {
     setCategory(null)
@@ -57,26 +90,26 @@ export function OrderFlow({
   }
 
   function goHome() {
-    resetSelection()
-    setStep('home')
+    navigate('home', resetSelection)
   }
 
   function startOrder() {
-    resetSelection()
-    setStep('category')
+    navigate('category', resetSelection)
   }
 
   function selectCategory(nextCategory: Category) {
-    setCategory(nextCategory)
-    setSelectedProductId(null)
-    setQuantity(null)
-    setStep(nextCategory === 'meat' ? 'product' : 'quantity')
+    navigate(nextCategory === 'meat' ? 'product' : 'quantity', () => {
+      setCategory(nextCategory)
+      setSelectedProductId(null)
+      setQuantity(null)
+    })
   }
 
   function selectProduct(productId: string) {
-    setSelectedProductId(productId)
-    setQuantity(null)
-    setStep('quantity')
+    navigate('quantity', () => {
+      setSelectedProductId(productId)
+      setQuantity(null)
+    })
   }
 
   function addToCart() {
@@ -108,11 +141,12 @@ export function OrderFlow({
       }
     }
 
-    const nextCart = [...cart, nextItem]
-    setCart(nextCart)
-    onCartChange(nextCart.length)
-    resetSelection()
-    setStep('cart')
+    navigate('cart', () => {
+      const nextCart = [...cart, nextItem]
+      setCart(nextCart)
+      onCartChange(nextCart.length)
+      resetSelection()
+    })
   }
 
   function removeFromCart(itemId: string) {
@@ -121,28 +155,29 @@ export function OrderFlow({
     onCartChange(nextCart.length)
 
     if (nextCart.length === 0 && step === 'cart') {
-      setStep('category')
+      navigate('category')
     }
   }
 
   function placeOrder() {
-    setStep('confirmation')
+    navigate('confirmation')
   }
 
   function orderAgain() {
-    resetSelection()
-    setCart([])
-    setDelivery({ name: '', address: '', instructions: '' })
-    onCartChange(0)
-    setStep('home')
+    navigate('home', () => {
+      resetSelection()
+      setCart([])
+      setDelivery({ name: '', address: '', instructions: '' })
+      onCartChange(0)
+    })
   }
 
   useEffect(() => {
     if (requestedStep === 'cart' && cart.length > 0) {
-      setStep('cart')
+      navigate('cart')
       onRequestedStepHandled()
     }
-  }, [requestedStep, cart.length, onRequestedStepHandled])
+  }, [requestedStep, cart.length, onRequestedStepHandled, navigate])
 
   const canAddToCart =
     quantity !== null && (category === 'sausage' || selectedProduct !== undefined)
@@ -156,7 +191,7 @@ export function OrderFlow({
     return (
       <StepLayout
         title="Welcome"
-        subtitle="Order fresh meat and sausage for delivery."
+        subtitle="Order pork meat and sausage for delivery."
         actions={
           <Button onClick={startOrder}>Start ordering</Button>
         }
@@ -218,7 +253,7 @@ export function OrderFlow({
         title="Choose your meat"
         subtitle="Select a product, then pick the weight in kilograms."
         actions={
-          <Button variant="secondary" onClick={() => setStep('category')}>
+          <Button variant="secondary" onClick={() => navigate('category')}>
             Back
           </Button>
         }
@@ -250,7 +285,7 @@ export function OrderFlow({
           <>
             <Button
               variant="secondary"
-              onClick={() => setStep(category === 'meat' ? 'product' : 'category')}
+              onClick={() => navigate(category === 'meat' ? 'product' : 'category')}
             >
               Back
             </Button>
@@ -292,10 +327,10 @@ export function OrderFlow({
         subtitle="Review your items before checkout."
         actions={
           <>
-            <Button variant="secondary" onClick={() => setStep('category')}>
+            <Button variant="secondary" onClick={() => navigate('category')}>
               Add more items
             </Button>
-            <Button onClick={() => setStep('delivery')} disabled={cart.length === 0}>
+            <Button onClick={() => navigate('delivery')} disabled={cart.length === 0}>
               Continue to delivery
             </Button>
           </>
@@ -330,7 +365,7 @@ export function OrderFlow({
         subtitle="Tell us where to deliver and any special notes."
         actions={
           <>
-            <Button variant="secondary" onClick={() => setStep('cart')}>
+            <Button variant="secondary" onClick={() => navigate('cart')}>
               Back to cart
             </Button>
             <Button onClick={placeOrder} disabled={!canPlaceOrder}>
