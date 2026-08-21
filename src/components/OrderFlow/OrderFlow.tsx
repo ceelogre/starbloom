@@ -200,6 +200,14 @@ export function OrderFlow({
   }
 
   useEffect(() => {
+    if (requestedStep === 'home') {
+      if (stepRef.current !== 'home') {
+        navigate('home', resetSelection)
+      }
+      onRequestedStepHandled()
+      return
+    }
+
     if (requestedStep === 'cart' && cart.length > 0) {
       navigate('cart')
       onRequestedStepHandled()
