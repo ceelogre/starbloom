@@ -3,12 +3,23 @@ import styles from './Header.module.css'
 type HeaderProps = {
   cartCount: number
   onCartClick: () => void
+  onHomeClick: () => void
 }
 
-export function Header({ cartCount, onCartClick }: HeaderProps) {
+export function Header({ cartCount, onCartClick, onHomeClick }: HeaderProps) {
   return (
     <header className={styles.header}>
-      <span className={styles.brand}>Starbloom</span>
+      <a
+        href="/"
+        className={styles.brand}
+        onClick={(event) => {
+          event.preventDefault()
+          onHomeClick()
+        }}
+      >
+        <span className={styles.brandMark} aria-hidden="true" />
+        Starbloom
+      </a>
       <div className={styles.actions}>
         <button
           type="button"

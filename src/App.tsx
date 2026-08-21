@@ -16,6 +16,7 @@ function App() {
       <Header
         cartCount={cartCount}
         onCartClick={() => setRequestedStep('cart')}
+        onHomeClick={() => setRequestedStep('home')}
       />
       <main className={styles.main}>
         <OrderFlow
