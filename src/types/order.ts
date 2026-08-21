@@ -17,16 +17,19 @@ export type CartItem =
       productName: string
       quantity: number
       unit: 'kg'
+      unitPrice: number
     }
   | {
       id: string
       category: 'sausage'
       quantity: number
       unit: 'pack'
+      unitPrice: number
     }
 
 export type DeliveryDetails = {
   name: string
+  phone: string
   address: string
   instructions: string
 }

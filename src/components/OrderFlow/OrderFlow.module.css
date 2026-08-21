@@ -110,6 +110,56 @@
   box-shadow: var(--shadow-xs);
 }
 
+.cartItemInfo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.cartItemPrice {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+}
+
+.cartTotals {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: var(--space-2) 0 0;
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface-sunken);
+}
+
+.cartVat,
+.cartSubtotal,
+.cartTotal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.cartVat {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.cartSubtotal {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.cartTotal {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+
 .removeButton {
   border: none;
   background: none;
@@ -214,9 +264,47 @@
 
 .summaryList {
   margin: var(--space-2) 0 0;
-  padding-left: var(--space-5);
+  padding: 0;
+  list-style: none;
   color: var(--color-text-muted);
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
+}
+
+.summaryList li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  font-variant-numeric: tabular-nums;
+}
+
+.summarySubtotal,
+.summaryVat {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin: var(--space-2) 0 0;
+  font-size: var(--font-size-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.summarySubtotal {
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+  font-weight: var(--font-weight-medium);
+}
+
+.summaryVat {
+  color: var(--color-text-muted);
+}
+
+.summaryTotal {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin: var(--space-2) 0 0;
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
 }
