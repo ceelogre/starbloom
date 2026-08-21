@@ -1,0 +1,92 @@
+/*
+ * Step-to-step page transitions. The View Transitions API crossfades the
+ * named "order-step" region (main content); the header stays put. Browsers
+ * without support get the StepLayout enter animation as a fallback.
+ */
+
+@keyframes step-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes step-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes step-out-forward {
+  to {
+    opacity: 0;
+    transform: translateX(-0.75rem);
+  }
+}
+
+@keyframes step-in-forward {
+  from {
+    opacity: 0;
+    transform: translateX(0.75rem);
+  }
+}
+
+@keyframes step-out-back {
+  to {
+    opacity: 0;
+    transform: translateX(0.75rem);
+  }
+}
+
+@keyframes step-in-back {
+  from {
+    opacity: 0;
+    transform: translateX(-0.75rem);
+  }
+}
+
+@supports (view-transition-name: none) {
+  /* Keep chrome (header, page background) still; only the step region moves. */
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
+  }
+
+  ::view-transition-old(order-step),
+  ::view-transition-new(order-step) {
+    animation-timing-function: var(--ease-out);
+    mix-blend-mode: normal;
+  }
+
+  ::view-transition-old(order-step) {
+    animation-name: step-out-forward;
+    animation-duration: var(--duration-page-out);
+  }
+
+  ::view-transition-new(order-step) {
+    animation-name: step-in-forward;
+    animation-duration: var(--duration-page-in);
+  }
+
+  html[data-nav-direction='back']::view-transition-old(order-step) {
+    animation-name: step-out-back;
+  }
+
+  html[data-nav-direction='back']::view-transition-new(order-step) {
+    animation-name: step-in-back;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @supports (view-transition-name: none) {
+    ::view-transition-old(order-step) {
+      animation-name: step-fade-out;
+      animation-duration: var(--duration-fast);
+    }
+
+    ::view-transition-new(order-step) {
+      animation-name: step-fade-in;
+      animation-duration: var(--duration-fast);
+    }
+  }
+}

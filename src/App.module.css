@@ -9,5 +9,6 @@
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding: 2rem 1.5rem 3rem;
+  padding: var(--space-10) var(--space-6) var(--space-12);
+  view-transition-name: order-step;
 }
