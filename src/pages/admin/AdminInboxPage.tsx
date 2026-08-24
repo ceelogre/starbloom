@@ -106,7 +106,10 @@ export function AdminInboxPage() {
   return (
     <section className={styles.page}>
       <div className={styles.heading}>
-        <h1 className={styles.title}>Orders</h1>
+        <div>
+          <h1 className={styles.title}>Orders</h1>
+          <p className={styles.muted}>Open an order to update status, mark paid, cancel, or print a ticket.</p>
+        </div>
         {unseen > 0 ? (
           <button type="button" className={styles.badge} onClick={() => setUnseen(0)}>
             {unseen} new

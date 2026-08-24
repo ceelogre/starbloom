@@ -72,16 +72,23 @@ export function Header(props: HeaderProps) {
           </button>
         ) : null}
         {props.variant === 'account' && session ? (
-          <button
-            type="button"
-            className={styles.cartButton}
-            onClick={() => {
-              void signOut().then(() => navigate('/'))
-            }}
-          >
-            <LogOut className={styles.actionIcon} aria-hidden="true" strokeWidth={2} />
-            Sign out
-          </button>
+          <>
+            {isStaff ? (
+              <Link to="/admin" className={styles.staffLink}>
+                Staff inbox
+              </Link>
+            ) : null}
+            <button
+              type="button"
+              className={styles.cartButton}
+              onClick={() => {
+                void signOut().then(() => navigate('/'))
+              }}
+            >
+              <LogOut className={styles.actionIcon} aria-hidden="true" strokeWidth={2} />
+              Sign out
+            </button>
+          </>
         ) : null}
         {shop ? (
           <>

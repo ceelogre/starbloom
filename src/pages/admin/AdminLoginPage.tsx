@@ -7,7 +7,7 @@ import { StepLayout } from '../../components/StepLayout/StepLayout'
 import styles from './AdminLoginPage.module.css'
 
 export function AdminLoginPage() {
-  const { session, ready, isStaff, signIn } = useAuth()
+  const { session, ready, isStaff, signIn, signOut } = useAuth()
   const location = useLocation()
   const from =
     (location.state as { from?: string } | null)?.from &&
@@ -20,8 +20,8 @@ export function AdminLoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
-  if (ready && session) {
-    return <Navigate to={isStaff ? from : '/orders'} replace />
+  if (ready && session && isStaff) {
+    return <Navigate to={from} replace />
   }
 
   async function handleSubmit(event: FormEvent) {
@@ -45,12 +45,30 @@ export function AdminLoginPage() {
         title="Staff login"
         subtitle="Sign in to process deliveries."
         actions={
-          <Button type="submit" form="admin-login" disabled={submitting || !email || !password}>
-            {submitting ? 'Signing in…' : 'Sign in'}
-          </Button>
+          ready && session && !isStaff ? (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                void signOut()
+              }}
+            >
+              Sign out
+            </Button>
+          ) : (
+            <Button type="submit" form="admin-login" disabled={submitting || !email || !password}>
+              {submitting ? 'Signing in…' : 'Sign in'}
+            </Button>
+          )
         }
       >
         {error ? <p className={styles.error}>{error}</p> : null}
+        {ready && session && !isStaff ? (
+          <p className={styles.error}>
+            This account is signed in, but it is not a staff profile. Promote it in Supabase
+            (`profiles.role = 'staff'`), then sign in again.
+          </p>
+        ) : null}
         <form id="admin-login" className={styles.form} onSubmit={(event) => void handleSubmit(event)}>
           <label className={styles.field}>
             <span className={styles.fieldLabel}>Email</span>
