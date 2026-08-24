@@ -7,6 +7,7 @@ export type OrderStep =
   | 'variant'
   | 'quantity'
   | 'cart'
+  | 'payment'
   | 'delivery'
   | 'confirmation'
 
@@ -41,6 +42,9 @@ export type OrderStatus =
 
 export type PaymentStatus = 'unpaid' | 'paid'
 
+/** Mirrors the `payment_method` enum. Only some of these can be picked today. */
+export type PaymentMethod = 'cash_on_delivery' | 'mobile_money' | 'card'
+
 export type OrderLine = {
   id: string
   orderId: string
@@ -60,6 +64,7 @@ export type Order = {
   orderNumber: string
   status: OrderStatus
   paymentStatus: PaymentStatus
+  paymentMethod: PaymentMethod
   customerName: string
   phone: string
   address: string

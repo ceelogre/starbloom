@@ -6,6 +6,7 @@ import type {
   Order,
   OrderLine,
   OrderStatus,
+  PaymentMethod,
   PaymentStatus,
 } from '../types/order'
 
@@ -19,6 +20,7 @@ type OrderRow = {
   order_number: string
   status: OrderStatus
   payment_status: PaymentStatus
+  payment_method: PaymentMethod
   customer_name: string
   phone: string
   address: string
@@ -130,6 +132,7 @@ function mapOrder(row: OrderRow, items: OrderLine[] = []): Order {
     orderNumber: row.order_number,
     status: row.status,
     paymentStatus: row.payment_status,
+    paymentMethod: row.payment_method,
     customerName: row.customer_name,
     phone: row.phone,
     address: row.address,
@@ -148,6 +151,7 @@ function mapOrder(row: OrderRow, items: OrderLine[] = []): Order {
 export async function placeGuestOrder(
   cart: CartItem[],
   delivery: DeliveryDetails,
+  paymentMethod: PaymentMethod,
 ): Promise<PlaceOrderResult> {
   requireSupabase()
 
@@ -156,6 +160,7 @@ export async function placeGuestOrder(
     p_phone: delivery.phone.trim(),
     p_address: delivery.address.trim(),
     p_instructions: delivery.instructions.trim(),
+    p_payment_method: paymentMethod,
     p_items: cartItemsPayload(cart),
   })
 

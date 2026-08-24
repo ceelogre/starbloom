@@ -4,6 +4,7 @@ import { OrderTotals } from '../../components/OrderTotals/OrderTotals'
 import { formatPrice } from '../../data/products'
 import { fetchMyOrder, formatLineLabel } from '../../lib/orders'
 import { formatOrderTime, ORDER_STATUS_LABELS } from '../../lib/order-status'
+import { PAYMENT_METHOD_LABELS } from '../../lib/payment'
 import { supabase } from '../../lib/supabase'
 import type { Order } from '../../types/order'
 import styles from '../admin/AdminOrderDetailPage.module.css'
@@ -114,7 +115,8 @@ export function CustomerOrderDetailPage() {
 
         <p className={styles.statusLine}>
           {ORDER_STATUS_LABELS[order.status]}
-          {order.paymentStatus === 'paid' ? ' · Paid' : ' · Unpaid (COD)'}
+          {order.paymentStatus === 'paid' ? ' · Paid' : ' · Unpaid'}
+          {` · ${PAYMENT_METHOD_LABELS[order.paymentMethod]}`}
         </p>
         {order.cancelledReason ? (
           <p className={styles.muted}>Cancelled: {order.cancelledReason}</p>
