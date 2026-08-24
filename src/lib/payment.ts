@@ -4,35 +4,33 @@ export const DEFAULT_PAYMENT_METHOD: PaymentMethod = 'cash_on_delivery'
 
 export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   cash_on_delivery: 'Pay on delivery',
-  mobile_money: 'Mobile money',
-  card: 'Card',
 }
 
-type PaymentMethodOption = {
-  id: PaymentMethod
+type PaymentOption = {
+  label: string
   description: string
-  /**
-   * Methods that cannot charge yet are still listed so customers know what is
-   * on the way. `place_guest_order` rejects them, so this has to stay in step
-   * with the `live_methods` array in that function.
-   */
-  available: boolean
 }
 
-export const PAYMENT_METHODS: PaymentMethodOption[] = [
+export const PAYMENT_METHODS: (PaymentOption & { id: PaymentMethod })[] = [
   {
     id: 'cash_on_delivery',
+    label: PAYMENT_METHOD_LABELS.cash_on_delivery,
     description: 'Pay the driver in cash when your order arrives.',
-    available: true,
   },
+]
+
+/**
+ * Advertised in checkout so customers know what is on the way, but the database
+ * has no value for these and they cannot be selected. Going live means adding
+ * the enum value in Postgres and moving the entry into `PAYMENT_METHODS`.
+ */
+export const UPCOMING_PAYMENT_METHODS: PaymentOption[] = [
   {
-    id: 'mobile_money',
+    label: 'Mobile money',
     description: 'MTN MoMo and Airtel Money.',
-    available: false,
   },
   {
-    id: 'card',
+    label: 'Card',
     description: 'Visa and Mastercard.',
-    available: false,
   },
 ]

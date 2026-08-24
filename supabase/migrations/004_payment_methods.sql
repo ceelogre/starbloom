@@ -1,18 +1,49 @@
 -- Payment method on orders.
--- Run after 003_inventory.sql.
+-- Run after 003_inventory.sql. Safe to run more than once.
 
--- Only 'cash_on_delivery' can take money today. The other values exist so the
--- checkout, the admin ticket, and the database share one vocabulary while the
--- rest is being set up.
-create type public.payment_method as enum (
-  'cash_on_delivery',
-  'mobile_money',
-  'card'
-);
+-- The enum only carries methods that can actually take money. Checkout also
+-- advertises mobile money and card, but those are copy in src/lib/payment.ts
+-- until there is something behind them: add the value here when one goes live.
+do $$
+begin
+  if to_regtype('public.payment_method') is null then
+    create type public.payment_method as enum ('cash_on_delivery');
+  end if;
+end $$;
 
 alter table public.orders
   add column if not exists payment_method public.payment_method
     not null default 'cash_on_delivery';
+
+-- An earlier draft of this file listed mobile_money and card in the enum, and
+-- Postgres cannot drop an enum value. The guard in place_guest_order below is
+-- the cast to this type, so a label the type still knows is one it would accept
+-- — rebuild the type to take those away. No order can hold a dropped label,
+-- because the RPC has always refused them, so the cast back cannot lose data.
+do $$
+begin
+  if exists (
+    select 1
+    from pg_enum
+    where enumtypid = 'public.payment_method'::regtype
+      and enumlabel <> 'cash_on_delivery'
+  ) then
+    alter table public.orders alter column payment_method drop default;
+
+    alter table public.orders
+      alter column payment_method type text using payment_method::text;
+
+    drop type public.payment_method;
+    create type public.payment_method as enum ('cash_on_delivery');
+
+    alter table public.orders
+      alter column payment_method type public.payment_method
+        using payment_method::public.payment_method;
+
+    alter table public.orders
+      alter column payment_method set default 'cash_on_delivery';
+  end if;
+end $$;
 
 -- Checkout now sends the chosen method, which changes the signature.
 drop function if exists public.place_guest_order(text, text, text, text, jsonb);
@@ -33,8 +64,6 @@ as $$
 declare
   fee constant integer := 2000;
   vat constant numeric := 0.18;
-  -- Add a method here once it can actually charge.
-  live_methods constant text[] := array['cash_on_delivery'];
   requested_method text;
   method public.payment_method;
   new_id uuid;
@@ -61,13 +90,15 @@ begin
 
   requested_method := coalesce(nullif(btrim(p_payment_method), ''), 'cash_on_delivery');
 
-  -- Recording an order against a channel that cannot charge would send a driver
-  -- out with goods nobody has paid for.
-  if not (requested_method = any (live_methods)) then
-    raise exception 'That payment method is not available yet';
-  end if;
-
-  method := requested_method::public.payment_method;
+  -- A method the enum does not know cannot charge, and filing the order anyway
+  -- would send a driver out expecting someone else to have collected. The cast
+  -- does the checking; this only trades its message for one a customer can read.
+  begin
+    method := requested_method::public.payment_method;
+  exception
+    when invalid_text_representation then
+      raise exception 'That payment method is not available yet';
+  end;
 
   new_number := public.next_order_number();
 

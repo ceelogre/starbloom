@@ -30,6 +30,7 @@ import {
   DEFAULT_PAYMENT_METHOD,
   PAYMENT_METHODS,
   PAYMENT_METHOD_LABELS,
+  UPCOMING_PAYMENT_METHODS,
 } from '../../lib/payment'
 import { cheapestPrice, isProductSoldOut, sellableVariants } from '../../types/catalog'
 import type { Product, ProductTag, ProductVariant } from '../../types/catalog'
@@ -678,9 +679,6 @@ export function OrderFlow({
   }
 
   if (step === 'payment') {
-    const live = PAYMENT_METHODS.filter((option) => option.available)
-    const upcoming = PAYMENT_METHODS.filter((option) => !option.available)
-
     return (
       <StepLayout
         title="How would you like to pay?"
@@ -692,22 +690,22 @@ export function OrderFlow({
           </Button>
         }
       >
-        {live.map((option) => (
+        {PAYMENT_METHODS.map((option) => (
           <SelectionCard
             key={option.id}
-            label={PAYMENT_METHOD_LABELS[option.id]}
+            label={option.label}
             description={option.description}
             selected={paymentMethod === option.id}
             onClick={() => selectPaymentMethod(option.id)}
           />
         ))}
-        {upcoming.length > 0 ? (
+        {UPCOMING_PAYMENT_METHODS.length > 0 ? (
           <div className={styles.group}>
             <h2 className={styles.groupTitle}>Coming soon</h2>
-            {upcoming.map((option) => (
+            {UPCOMING_PAYMENT_METHODS.map((option) => (
               <SelectionCard
-                key={option.id}
-                label={PAYMENT_METHOD_LABELS[option.id]}
+                key={option.label}
+                label={option.label}
                 description={option.description}
                 disabled
               />

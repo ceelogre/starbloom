@@ -42,8 +42,8 @@ export type OrderStatus =
 
 export type PaymentStatus = 'unpaid' | 'paid'
 
-/** Mirrors the `payment_method` enum. Only some of these can be picked today. */
-export type PaymentMethod = 'cash_on_delivery' | 'mobile_money' | 'card'
+/** Mirrors the `payment_method` enum, which only lists methods that can charge. */
+export type PaymentMethod = 'cash_on_delivery'
 
 export type OrderLine = {
   id: string
