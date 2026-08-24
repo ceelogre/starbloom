@@ -5,6 +5,7 @@ import adminStyles from './AdminShell.module.css'
 
 const TABS = [
   { to: '/admin', label: 'Orders', end: true },
+  { to: '/admin/support', label: 'Support', end: false },
   { to: '/admin/inventory', label: 'Inventory', end: false },
 ]
 

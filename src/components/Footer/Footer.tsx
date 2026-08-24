@@ -56,6 +56,9 @@ export function Footer({
           <button type="button" className={styles.navButton} onClick={onHowItWorksClick}>
             How it works
           </button>
+          <Link to="/contact" className={styles.navLink}>
+            Contact
+          </Link>
         </div>
       </div>
       <div className={styles.legalRow}>

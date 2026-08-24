@@ -99,6 +99,9 @@ export function Header(props: HeaderProps) {
             >
               How it works
             </button>
+            <Link to="/contact" className={styles.staffLink}>
+              Contact
+            </Link>
             <Link to={trackHref} className={styles.staffLink}>
               Track order
             </Link>
