@@ -117,6 +117,7 @@ export function OrderFlow({
   const [delivery, setDelivery] = useState<DeliveryDetails>({
     name: '',
     phone: '',
+    email: '',
     address: '',
     instructions: '',
   })
@@ -311,7 +312,7 @@ export function OrderFlow({
       setOrderNumber(null)
       setPlaceError(null)
       setPaymentMethod(DEFAULT_PAYMENT_METHOD)
-      setDelivery({ name: '', phone: '', address: '', instructions: '' })
+      setDelivery({ name: '', phone: '', email: '', address: '', instructions: '' })
     })
     void loadCatalog()
   }
@@ -371,10 +372,15 @@ export function OrderFlow({
 
   const canAddToCart = quantity !== null && selectedVariant !== undefined
 
+  // An email is optional, so it stays out of canPlaceOrder.
   const canPlaceOrder =
     delivery.name.trim().length > 0 &&
     delivery.phone.trim().length > 0 &&
     delivery.address.trim().length > 0
+
+  const accountEmail = user?.email ?? null
+  /** Mirrors place_guest_order: a typed address wins, then the account's. */
+  const notifyEmail = delivery.email.trim() || accountEmail
 
   if (step === 'home') {
     return (
@@ -800,6 +806,32 @@ export function OrderFlow({
             />
             <span className={styles.fieldHint}>We’ll use this to confirm the delivery.</span>
           </label>
+          {accountEmail ? (
+            <p className={styles.fieldHint}>
+              We’ll email order updates to {accountEmail}.
+            </p>
+          ) : (
+            <label className={styles.field}>
+              <span className={styles.fieldLabel}>
+                Email <span className={styles.optional}>(optional)</span>
+              </span>
+              <input
+                className={styles.input}
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                value={delivery.email}
+                onChange={(event) =>
+                  setDelivery((current) => ({ ...current, email: event.target.value }))
+                }
+                placeholder="you@example.com"
+              />
+              <span className={styles.fieldHint}>
+                Add it and we’ll email you when the order is confirmed and when it’s on
+                the way.
+              </span>
+            </label>
+          )}
           <label className={styles.field}>
             <span className={styles.fieldLabel}>Delivery address</span>
             <input
@@ -879,6 +911,12 @@ export function OrderFlow({
             Nothing was charged here. Pay the driver when your order arrives — we’ll
             confirm the details by phone first.
           </p>
+          {notifyEmail ? (
+            <p className={styles.nextStep}>
+              We’ll email {notifyEmail} when the order is confirmed and again when it
+              leaves for delivery.
+            </p>
+          ) : null}
           {user ? (
             <p className={styles.nextStep}>
               <Link to="/orders">Track this order</Link> in your account.

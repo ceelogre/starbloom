@@ -16,12 +16,15 @@ In the SQL editor, run in order:
 2. [`supabase/migrations/002_customer_tracking.sql`](../supabase/migrations/002_customer_tracking.sql)
 3. [`supabase/migrations/003_inventory.sql`](../supabase/migrations/003_inventory.sql)
 4. [`supabase/migrations/004_payment_methods.sql`](../supabase/migrations/004_payment_methods.sql)
+5. [`supabase/migrations/005_order_email_notifications.sql`](../supabase/migrations/005_order_email_notifications.sql)
 
-`001` creates `orders` / `order_items`, guest checkout RPC, and Realtime. `002` adds `profiles`, `orders.customer_id`, staff vs customer RLS, and attaches signed-in users to new orders. `003` adds the catalog (`products`, `product_variants`), stock tracking (`stock_movements`), and seeds the price menu. `004` adds `orders.payment_method`.
+`001` creates `orders` / `order_items`, guest checkout RPC, and Realtime. `002` adds `profiles`, `orders.customer_id`, staff vs customer RLS, and attaches signed-in users to new orders. `003` adds the catalog (`products`, `product_variants`), stock tracking (`stock_movements`), and seeds the price menu. `004` adds `orders.payment_method`. `005` adds `orders.contact_email`, the `order_emails` log, and the trigger that asks the Edge Function to send status emails.
 
 If Realtime was already enabled for `orders`, a duplicate-publication error on `001` can be ignored.
 
 `004` is safe to run more than once: it guards each step, and it rebuilds the `payment_method` type if that type holds labels which are no longer live.
+
+`005` is safe to run more than once, but it does nothing on its own — until section 6 is done, the trigger it installs finds no Vault secrets and only writes a warning.
 
 ## 2b. Inventory
 
@@ -72,7 +75,82 @@ Existing auth users get a `profiles` row when `002` runs. New sign-ins get a row
 - Signed-in **staff** can read and update status / payment / cancel reason. The app never deletes orders.
 - A customer session must not reach the admin inbox (the app also checks `profiles.role`).
 - Anyone may read **active** products and variants. Only staff can write to them or read `stock_movements`.
+- Only staff can read `order_emails`. Nobody writes to it through the API: the Edge Function uses the service role key.
 
 ## 5. Realtime
 
 Database → Replication (or Realtime) should include `public.orders` and `public.product_variants`. Inserts drive the admin badge, beep, and optional desktop notification. Customers subscribe to updates on their own orders.
+
+## 6. Order emails
+
+Customers get an email when an order is marked **confirmed** and again when it is marked **out for delivery**. Nothing else sends mail, and the address is optional: guests are offered a field at checkout, signed-in customers get the address on their account, and an order with no address is simply skipped.
+
+The path is `orders.status` update → `orders_notify_status_email` trigger → `net.http_post` → the [`order-status-email`](../supabase/functions/order-status-email/index.ts) Edge Function → Resend. The trigger only asks; the function decides and records. Postgres cannot hold the Resend key, and the browser cannot read another customer's email out of `auth.users`, which is why this lives in a function rather than in the app.
+
+Email is a courtesy and the order is the business, so the trigger swallows its own failures: if any of the setup below is missing or broken, staff can still move orders along and Postgres only logs a warning.
+
+### 6a. Resend
+
+1. Add and verify a sending domain at [resend.com](https://resend.com).
+2. Create an API key.
+
+### 6b. Deploy the function
+
+```bash
+npx supabase login
+npx supabase link --project-ref <ref>
+
+npx supabase secrets set \
+  RESEND_API_KEY=re_... \
+  ORDER_EMAIL_FROM='Starbloom <orders@your-domain.com>' \
+  ORDER_EMAIL_SECRET="$(openssl rand -hex 32)" \
+  PUBLIC_SITE_URL=https://your-app-origin
+
+npm run functions:deploy
+```
+
+`ORDER_EMAIL_SECRET` is the only thing guarding the function: it is deployed with `verify_jwt = false` (pg_net carries no user JWT), and it rejects any request whose `x-starbloom-signature` header does not match. Generate a fresh random value and keep it. `PUBLIC_SITE_URL` is optional and only used for the "Track this order" link.
+
+`SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are injected by the platform. Do not set them by hand, and never copy the service role key into `.env`.
+
+### 6c. Tell Postgres where to knock
+
+Two secrets in Vault, set once in the SQL editor. The second must be the **same value** you gave `ORDER_EMAIL_SECRET` above.
+
+```sql
+select vault.create_secret(
+  'https://<ref>.functions.supabase.co/order-status-email',
+  'order_email_fn_url'
+);
+select vault.create_secret('<same value as ORDER_EMAIL_SECRET>', 'order_email_fn_secret');
+```
+
+To rotate one later, use `vault.update_secret` rather than creating a second row with the same name.
+
+Confirm `pg_net` shows as enabled under Database → Extensions. `005` enables it, but the toggle is worth checking.
+
+### 6d. Checking and debugging
+
+Every attempt writes a row to `public.order_emails`, one per order and status. The unique pair is what stops a status set twice from mailing the customer twice; a row with no `sent_at` is a failure. Staff see the same thing in plain English at the bottom of `/admin/orders/:id`.
+
+```sql
+-- What we tried to send, and whether it landed.
+select order_id, status, recipient, sent_at, error
+from public.order_emails
+order by created_at desc
+limit 20;
+
+-- Did the request reach the function at all? (401 means the two secrets differ.)
+select id, status_code, content, created
+from net._http_response
+order by created desc
+limit 10;
+```
+
+A failed row keeps its claim, so it will not retry on its own. Delete the row and set the status again to have another go:
+
+```sql
+delete from public.order_emails where order_id = '<uuid>' and status = 'confirmed';
+```
+
+Bounces, spam complaints and per-message delivery detail live in the Resend dashboard; `order_emails.provider_id` is the message id to search for.

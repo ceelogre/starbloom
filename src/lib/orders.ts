@@ -4,6 +4,7 @@ import type {
   CartItem,
   DeliveryDetails,
   Order,
+  OrderEmail,
   OrderLine,
   OrderStatus,
   PaymentMethod,
@@ -23,6 +24,7 @@ type OrderRow = {
   payment_method: PaymentMethod
   customer_name: string
   phone: string
+  contact_email: string | null
   address: string
   instructions: string
   subtotal: number
@@ -32,6 +34,15 @@ type OrderRow = {
   cancelled_reason: string | null
   created_at: string
   updated_at: string
+}
+
+type OrderEmailRow = {
+  id: string
+  status: OrderStatus
+  recipient: string
+  sent_at: string | null
+  error: string | null
+  created_at: string
 }
 
 type OrderItemRow = {
@@ -135,6 +146,7 @@ function mapOrder(row: OrderRow, items: OrderLine[] = []): Order {
     paymentMethod: row.payment_method,
     customerName: row.customer_name,
     phone: row.phone,
+    contactEmail: row.contact_email,
     address: row.address,
     instructions: row.instructions,
     subtotal: row.subtotal,
@@ -158,6 +170,7 @@ export async function placeGuestOrder(
   const { data, error } = await supabase.rpc('place_guest_order', {
     p_customer_name: delivery.name.trim(),
     p_phone: delivery.phone.trim(),
+    p_email: delivery.email.trim(),
     p_address: delivery.address.trim(),
     p_instructions: delivery.instructions.trim(),
     p_payment_method: paymentMethod,
@@ -236,6 +249,30 @@ export async function fetchOrder(id: string): Promise<Order> {
   }
 
   return mapOrder(order as OrderRow, ((items ?? []) as OrderItemRow[]).map(mapLine))
+}
+
+/** Staff only, so the admin ticket can show whether an update email landed. */
+export async function fetchOrderEmails(orderId: string): Promise<OrderEmail[]> {
+  requireSupabase()
+
+  const { data, error } = await supabase
+    .from('order_emails')
+    .select('id, status, recipient, sent_at, error, created_at')
+    .eq('order_id', orderId)
+    .order('created_at', { ascending: true })
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return ((data ?? []) as OrderEmailRow[]).map((row) => ({
+    id: row.id,
+    status: row.status,
+    recipient: row.recipient,
+    sentAt: row.sent_at,
+    error: row.error,
+    createdAt: row.created_at,
+  }))
 }
 
 export async function updateOrderStatus(id: string, status: OrderStatus) {

@@ -6,29 +6,37 @@ import { formatPrice } from '../../data/products'
 import {
   cancelOrder,
   fetchOrder,
+  fetchOrderEmails,
   formatLineLabel,
   markOrderPaid,
   updateOrderStatus,
 } from '../../lib/orders'
 import { formatOrderTime, nextStatus, ORDER_STATUS_LABELS } from '../../lib/order-status'
 import { PAYMENT_METHOD_LABELS } from '../../lib/payment'
-import type { Order } from '../../types/order'
+import type { Order, OrderEmail } from '../../types/order'
 import styles from './AdminOrderDetailPage.module.css'
 
 export function AdminOrderDetailPage() {
   const { orderId } = useParams<{ orderId: string }>()
   const [order, setOrder] = useState<Order | null>(null)
+  const [emails, setEmails] = useState<OrderEmail[]>([])
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [cancelReason, setCancelReason] = useState('')
   const [showCancel, setShowCancel] = useState(false)
 
+  /** The email log is diagnostic, so losing it must not lose the order. */
+  function loadOrder(id: string) {
+    return Promise.all([fetchOrder(id), fetchOrderEmails(id).catch(() => [])])
+  }
+
   async function reload() {
     if (!orderId) {
       return
     }
-    const next = await fetchOrder(orderId)
+    const [next, sent] = await loadOrder(orderId)
     setOrder(next)
+    setEmails(sent)
     setCancelReason(next.cancelledReason ?? '')
   }
 
@@ -40,10 +48,11 @@ export function AdminOrderDetailPage() {
     let cancelled = false
     setError(null)
 
-    void fetchOrder(orderId)
-      .then((next) => {
+    void loadOrder(orderId)
+      .then(([next, sent]) => {
         if (!cancelled) {
           setOrder(next)
+          setEmails(sent)
           setCancelReason(next.cancelledReason ?? '')
         }
       })
@@ -110,6 +119,7 @@ export function AdminOrderDetailPage() {
         <h2 className={styles.sectionTitle}>Customer</h2>
         <p className={styles.value}>{order.customerName}</p>
         <p className={styles.muted}>{order.phone}</p>
+        {order.contactEmail ? <p className={styles.muted}>{order.contactEmail}</p> : null}
         <p className={styles.muted}>{order.address}</p>
         {order.instructions.trim() ? (
           <p className={styles.muted}>Notes: {order.instructions}</p>
@@ -193,6 +203,33 @@ export function AdminOrderDetailPage() {
           </Button>
         </form>
       ) : null}
+
+      <div className={styles.screenOnly}>
+        <h2 className={styles.sectionTitle}>Email updates</h2>
+        {!order.contactEmail ? (
+          <p className={styles.muted}>
+            This order has no email address, so no update emails are sent.
+          </p>
+        ) : emails.length === 0 ? (
+          <p className={styles.muted}>
+            Nothing sent yet. {order.contactEmail} is emailed when this order is
+            confirmed and when it goes out for delivery.
+          </p>
+        ) : (
+          <ul className={styles.notifications}>
+            {emails.map((email) => (
+              <li key={email.id}>
+                <span>{ORDER_STATUS_LABELS[email.status]}</span>
+                {email.sentAt ? (
+                  <span className={styles.muted}>Sent {formatOrderTime(email.sentAt)}</span>
+                ) : (
+                  <span className={styles.failed}>{email.error ?? 'Sending…'}</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </section>
   )
 }
