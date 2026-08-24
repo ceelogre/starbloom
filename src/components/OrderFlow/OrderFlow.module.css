@@ -1,48 +1,3 @@
-.heroMedia {
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-border);
-  background-color: var(--color-surface-sunken);
-  box-shadow: var(--shadow-sm);
-  overflow: hidden;
-}
-
-.heroImage {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-
-.heroCard {
-  padding: var(--space-5) var(--space-6);
-  border-radius: var(--radius-md);
-  background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-xs);
-}
-
-.heroLabel {
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  text-transform: uppercase;
-  letter-spacing: var(--letter-spacing-wide);
-  color: var(--color-accent-strong);
-  margin-bottom: var(--space-3);
-}
-
-.stepsList {
-  margin: 0;
-  padding-left: var(--space-5);
-  color: var(--color-text-muted);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.stepsList::marker {
-  color: var(--color-accent-strong);
-  font-weight: var(--font-weight-bold);
-}
-
 .quantityGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(4.5rem, 1fr));
@@ -89,6 +44,13 @@
   color: var(--color-text-muted);
 }
 
+.hint {
+  margin-top: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
 .cartList {
   list-style: none;
   margin: 0;
@@ -100,9 +62,9 @@
 
 .cartItem {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
+  gap: var(--space-3) var(--space-4);
   padding: var(--space-4) var(--space-5);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -114,14 +76,70 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
+  flex: 1 1 8rem;
   min-width: 0;
+}
+
+.cartItemName {
+  font-weight: var(--font-weight-semibold);
 }
 
 .cartItemPrice {
   font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
   font-variant-numeric: tabular-nums;
   color: var(--color-text-muted);
+}
+
+.qtyControls {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.qtyButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--font-size-lg);
+  cursor: pointer;
+}
+
+.qtyButton:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary-subtle);
+}
+
+.qtyButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.qtyValue {
+  min-width: 4.25rem;
+  text-align: center;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.cartItemEnd {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-1);
+  margin-left: auto;
+}
+
+.cartLineTotal {
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
 }
 
 .removeButton {
@@ -144,6 +162,63 @@
   text-align: center;
   color: var(--color-text-muted);
   padding: var(--space-8) var(--space-4);
+}
+
+.formError {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-danger-subtle);
+  color: var(--color-danger);
+  font-size: var(--font-size-sm);
+}
+
+.checkoutSummary {
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface-sunken);
+}
+
+.summaryKicker {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--color-accent-strong);
+  margin-bottom: var(--space-2);
+}
+
+.fieldHint,
+.optional {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+}
+
+.optional {
+  font-weight: var(--font-weight-regular);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.nextStep {
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+}
+
+.nextStep + .nextStep {
+  margin-top: var(--space-3);
+  padding-top: 0;
+  border-top: none;
+}
+
+.nextStep a {
+  color: var(--color-text);
+  font-weight: var(--font-weight-medium);
 }
 
 .form {

@@ -18,6 +18,7 @@ html {
   line-height: var(--line-height-base);
   color: var(--color-text);
   background-color: var(--color-bg);
+  scroll-padding-top: 4.5rem;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;

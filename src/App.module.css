@@ -12,3 +12,9 @@
   padding: var(--space-10) var(--space-6) var(--space-12);
   view-transition-name: order-step;
 }
+
+.mainHome {
+  flex: 1;
+  width: 100%;
+  view-transition-name: order-step;
+}

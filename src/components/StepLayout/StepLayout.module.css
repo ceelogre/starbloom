@@ -35,6 +35,24 @@
   text-align: center;
 }
 
+.progress {
+  display: flex;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-bottom: var(--space-6);
+}
+
+.progressSeg {
+  width: 2.5rem;
+  height: 0.28rem;
+  border-radius: var(--radius-full);
+  background-color: var(--color-border);
+}
+
+.progressSegFilled {
+  background-color: var(--color-primary);
+}
+
 .title {
   font-size: var(--font-size-3xl);
   margin-bottom: var(--space-2);
@@ -52,9 +70,14 @@
 }
 
 .actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-3);
   justify-content: center;
   margin-top: var(--space-8);
+  padding: var(--space-4) 0 var(--space-2);
+  background: linear-gradient(180deg, transparent, var(--color-bg) 28%);
 }
