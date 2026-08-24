@@ -18,15 +18,21 @@
     transform var(--duration-base) var(--ease-emphasized);
 }
 
-.card:hover {
+.card:hover:not(:disabled) {
   border-color: var(--color-primary);
   background-color: var(--color-primary-subtle);
   box-shadow: var(--shadow-md);
   transform: translateY(-2px);
 }
 
-.card:active {
+.card:active:not(:disabled) {
   transform: translateY(0);
+}
+
+.card:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
 }
 
 .icon {

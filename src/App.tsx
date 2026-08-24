@@ -7,8 +7,10 @@ import { CustomerOrderDetailPage } from './pages/account/CustomerOrderDetailPage
 import { CustomerOrdersPage } from './pages/account/CustomerOrdersPage'
 import { CustomerShell } from './pages/account/CustomerShell'
 import { AdminInboxPage } from './pages/admin/AdminInboxPage'
+import { AdminInventoryPage } from './pages/admin/AdminInventoryPage'
 import { AdminLoginPage } from './pages/admin/AdminLoginPage'
 import { AdminOrderDetailPage } from './pages/admin/AdminOrderDetailPage'
+import { AdminProductPage } from './pages/admin/AdminProductPage'
 import { AdminShell } from './pages/admin/AdminShell'
 import { ShopPage } from './pages/ShopPage'
 
@@ -31,6 +33,9 @@ function App() {
             <Route path="/admin" element={<AdminShell />}>
               <Route index element={<AdminInboxPage />} />
               <Route path="orders/:orderId" element={<AdminOrderDetailPage />} />
+              <Route path="inventory" element={<AdminInventoryPage />} />
+              <Route path="inventory/new" element={<AdminProductPage />} />
+              <Route path="inventory/:productId" element={<AdminProductPage />} />
             </Route>
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

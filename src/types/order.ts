@@ -4,28 +4,25 @@ export type OrderStep =
   | 'home'
   | 'category'
   | 'product'
+  | 'variant'
   | 'quantity'
   | 'cart'
   | 'delivery'
   | 'confirmation'
 
-export type CartItem =
-  | {
-      id: string
-      category: 'meat'
-      productId: string
-      productName: string
-      quantity: number
-      unit: 'kg'
-      unitPrice: number
-    }
-  | {
-      id: string
-      category: 'sausage'
-      quantity: number
-      unit: 'pack'
-      unitPrice: number
-    }
+export type CartItem = {
+  id: string
+  category: Category
+  productId: string
+  productName: string
+  variantId: string
+  variantLabel: string
+  quantity: number
+  unit: 'kg' | 'box'
+  unitPrice: number
+  /** Stock left for this variant, or null when the variant is untracked. */
+  stockLimit: number | null
+}
 
 export type DeliveryDetails = {
   name: string
@@ -48,10 +45,12 @@ export type OrderLine = {
   id: string
   orderId: string
   category: Category
+  variantId: string | null
   productId: string | null
   productName: string | null
   quantity: number
-  unit: 'kg' | 'pack'
+  /** 'pack' only appears on orders placed before the inventory system. */
+  unit: 'kg' | 'box' | 'pack'
   unitPrice: number
   lineTotal: number
 }

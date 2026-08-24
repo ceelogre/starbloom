@@ -2,12 +2,12 @@ import { useCallback, useEffect, useState } from 'react'
 import styles from '../App.module.css'
 import { Footer } from '../components/Footer/Footer'
 import { Header } from '../components/Header/Header'
-import { OrderFlow, type OrderStep } from '../components/OrderFlow/OrderFlow'
+import { OrderFlow, type OrderStep, type StepRequest } from '../components/OrderFlow/OrderFlow'
 
 export function ShopPage() {
   const [cartCount, setCartCount] = useState(0)
   const [step, setStep] = useState<OrderStep>('home')
-  const [requestedStep, setRequestedStep] = useState<OrderStep | null>(null)
+  const [requestedStep, setRequestedStep] = useState<StepRequest | null>(null)
   const [scrollTarget, setScrollTarget] = useState<string | null>(null)
 
   const handleRequestedStepHandled = useCallback(() => {
@@ -26,18 +26,18 @@ export function ShopPage() {
   function goHome() {
     setScrollTarget(null)
     window.scrollTo({ top: 0, behavior: 'smooth' })
-    setRequestedStep('home')
+    setRequestedStep({ step: 'home' })
   }
 
   return (
     <div className={styles.layout}>
       <Header
         cartCount={cartCount}
-        onCartClick={() => setRequestedStep('cart')}
+        onCartClick={() => setRequestedStep({ step: 'cart' })}
         onHomeClick={goHome}
         onHowItWorksClick={() => {
           setScrollTarget('how-it-works')
-          setRequestedStep('home')
+          setRequestedStep({ step: 'home' })
         }}
       />
       <main className={step === 'home' ? styles.mainHome : styles.main}>
@@ -49,13 +49,13 @@ export function ShopPage() {
         />
       </main>
       <Footer
-        onStartOrder={() => setRequestedStep('category')}
-        onStartMeat={() => setRequestedStep('product')}
-        onStartSausage={() => setRequestedStep('quantity')}
+        onStartOrder={() => setRequestedStep({ step: 'category' })}
+        onStartMeat={() => setRequestedStep({ step: 'product', category: 'meat' })}
+        onStartSausage={() => setRequestedStep({ step: 'product', category: 'sausage' })}
         onHomeClick={goHome}
         onHowItWorksClick={() => {
           setScrollTarget('how-it-works')
-          setRequestedStep('home')
+          setRequestedStep({ step: 'home' })
         }}
       />
     </div>

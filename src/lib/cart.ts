@@ -1,13 +1,10 @@
-import { DELIVERY_PRICE, SAUSAGE_LABEL, vatIncludedIn } from '../data/products'
+import { DELIVERY_PRICE, formatQuantity, quantityStepFor, vatIncludedIn } from '../data/products'
 import type { CartItem } from '../types/order'
 
-export function formatCartItem(item: CartItem) {
-  if (item.category === 'meat') {
-    return `${item.productName} — ${item.quantity} kg`
-  }
+export const MAX_LINE_QUANTITY = 10
 
-  const packLabel = item.quantity === 1 ? 'pack' : 'packs'
-  return `${SAUSAGE_LABEL} — ${item.quantity} ${packLabel}`
+export function formatCartItem(item: CartItem) {
+  return `${item.productName} (${item.variantLabel}) — ${formatQuantity(item.quantity, item.unit)}`
 }
 
 export function lineTotal(item: CartItem) {
@@ -22,22 +19,17 @@ export function orderTotal(items: CartItem[]) {
   return cartTotal(items) + DELIVERY_PRICE
 }
 
-export const MAX_LINE_QUANTITY = 10
-
-export function isSameProduct(a: CartItem, b: CartItem) {
-  if (a.category !== b.category) {
-    return false
+/** How much of a variant a customer may still add, stock and cap included. */
+export function maxQuantityFor(item: Pick<CartItem, 'stockLimit'>) {
+  if (item.stockLimit === null) {
+    return MAX_LINE_QUANTITY
   }
 
-  if (a.category === 'meat' && b.category === 'meat') {
-    return a.productId === b.productId
-  }
-
-  return true
+  return Math.min(MAX_LINE_QUANTITY, item.stockLimit)
 }
 
 export function mergeCartItem(cart: CartItem[], incoming: CartItem): CartItem[] {
-  const index = cart.findIndex((item) => isSameProduct(item, incoming))
+  const index = cart.findIndex((item) => item.variantId === incoming.variantId)
 
   if (index === -1) {
     return [...cart, incoming]
@@ -48,8 +40,10 @@ export function mergeCartItem(cart: CartItem[], incoming: CartItem): CartItem[] 
       return item
     }
 
-    const quantity = Math.min(MAX_LINE_QUANTITY, roundQuantity(item.quantity + incoming.quantity))
-    return { ...item, quantity } as CartItem
+    return {
+      ...item,
+      quantity: Math.min(maxQuantityFor(item), roundQuantity(item.quantity + incoming.quantity)),
+    }
   })
 }
 
@@ -61,11 +55,11 @@ export function adjustCartQuantity(cart: CartItem[], itemId: string, delta: numb
 
     const quantity = roundQuantity(item.quantity + delta)
 
-    if (quantity < (item.unit === 'kg' ? 0.5 : 1)) {
+    if (quantity < quantityStepFor(item.unit)) {
       return []
     }
 
-    return [{ ...item, quantity: Math.min(MAX_LINE_QUANTITY, quantity) } as CartItem]
+    return [{ ...item, quantity: Math.min(maxQuantityFor(item), quantity) }]
   })
 }
 

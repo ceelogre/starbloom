@@ -7,6 +7,14 @@ export function isSupabaseConfigured() {
   return Boolean(supabaseUrl && supabaseAnonKey)
 }
 
+export function requireSupabase() {
+  if (!isSupabaseConfigured()) {
+    throw new Error(
+      'Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env.',
+    )
+  }
+}
+
 export const supabase = createClient(
   supabaseUrl || 'https://placeholder.supabase.co',
   supabaseAnonKey || 'placeholder',
