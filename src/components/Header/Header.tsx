@@ -1,3 +1,4 @@
+import { ThemeToggle } from '../ThemeToggle/ThemeToggle'
 import styles from './Header.module.css'
 
 type HeaderProps = {
@@ -21,6 +22,7 @@ export function Header({ cartCount, onCartClick, onHomeClick }: HeaderProps) {
         Starbloom
       </a>
       <div className={styles.actions}>
+        <ThemeToggle />
         <button
           type="button"
           className={styles.cartButton}

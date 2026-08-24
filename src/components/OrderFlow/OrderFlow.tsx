@@ -1,21 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { Button } from '../Button/Button'
+import { OrderTotals } from '../OrderTotals/OrderTotals'
 import { SelectionCard } from '../SelectionCard/SelectionCard'
 import { StepLayout } from '../StepLayout/StepLayout'
 import {
-  DELIVERY_PRICE,
   MEAT_PRICE_PER_KG,
   MEAT_PRODUCTS,
   MEAT_QUANTITY_OPTIONS,
-  SAUSAGE_LABEL,
   SAUSAGE_QUANTITY_OPTIONS,
   SAUSAGE_PRICE_PER_PACK,
-  VAT_RATE,
   formatPrice,
   unitPriceFor,
-  vatIncludedIn,
 } from '../../data/products'
+import { formatCartItem, lineTotal } from '../../lib/cart'
 import type {
   CartItem,
   Category,
@@ -44,27 +42,6 @@ const STEP_ORDER: Record<OrderStep, number> = {
 
 function createCartItemId() {
   return crypto.randomUUID()
-}
-
-function formatCartItem(item: CartItem) {
-  if (item.category === 'meat') {
-    return `${item.productName} — ${item.quantity} kg`
-  }
-
-  const packLabel = item.quantity === 1 ? 'pack' : 'packs'
-  return `${SAUSAGE_LABEL} — ${item.quantity} ${packLabel}`
-}
-
-function lineTotal(item: CartItem) {
-  return item.quantity * item.unitPrice
-}
-
-function cartTotal(items: CartItem[]) {
-  return items.reduce((sum, item) => sum + lineTotal(item), 0)
-}
-
-function orderTotal(items: CartItem[]) {
-  return cartTotal(items) + DELIVERY_PRICE
 }
 
 export function OrderFlow({
@@ -101,7 +78,10 @@ export function OrderFlow({
     }
 
     if (typeof document.startViewTransition === 'function') {
-      document.startViewTransition(update)
+      const transition = document.startViewTransition(update)
+      void transition.finished.finally(() => {
+        delete document.documentElement.dataset.navDirection
+      })
       return
     }
 
@@ -169,9 +149,7 @@ export function OrderFlow({
     }
 
     navigate('cart', () => {
-      const nextCart = [...cart, nextItem]
-      setCart(nextCart)
-      onCartChange(nextCart.length)
+      setCart((current) => [...current, nextItem])
       resetSelection()
     })
   }
@@ -179,7 +157,6 @@ export function OrderFlow({
   function removeFromCart(itemId: string) {
     const nextCart = cart.filter((item) => item.id !== itemId)
     setCart(nextCart)
-    onCartChange(nextCart.length)
 
     if (nextCart.length === 0 && step === 'cart') {
       navigate('category')
@@ -195,23 +172,25 @@ export function OrderFlow({
       resetSelection()
       setCart([])
       setDelivery({ name: '', phone: '', address: '', instructions: '' })
-      onCartChange(0)
     })
   }
 
   useEffect(() => {
-    if (requestedStep === 'home') {
-      if (stepRef.current !== 'home') {
-        navigate('home', resetSelection)
-      }
-      onRequestedStepHandled()
+    onCartChange(cart.length)
+  }, [cart.length, onCartChange])
+
+  useEffect(() => {
+    if (!requestedStep) {
       return
     }
 
-    if (requestedStep === 'cart' && cart.length > 0) {
+    if (requestedStep === 'home' && stepRef.current !== 'home') {
+      navigate('home', resetSelection)
+    } else if (requestedStep === 'cart' && cart.length > 0) {
       navigate('cart')
-      onRequestedStepHandled()
     }
+
+    onRequestedStepHandled()
   }, [requestedStep, cart.length, onRequestedStepHandled, navigate])
 
   const canAddToCart =
@@ -400,24 +379,7 @@ export function OrderFlow({
                 </li>
               ))}
             </ul>
-            <div className={styles.cartTotals}>
-              <p className={styles.cartSubtotal}>
-                <span>Subtotal</span>
-                <span>{formatPrice(cartTotal(cart))}</span>
-              </p>
-              <p className={styles.cartVat}>
-                <span>VAT ({Math.round(VAT_RATE * 100)}% included)</span>
-                <span>{formatPrice(vatIncludedIn(cartTotal(cart)))}</span>
-              </p>
-              <p className={styles.cartVat}>
-                <span>Delivery</span>
-                <span>{formatPrice(DELIVERY_PRICE)}</span>
-              </p>
-              <p className={styles.cartTotal}>
-                <span>Total</span>
-                <span>{formatPrice(orderTotal(cart))}</span>
-              </p>
-            </div>
+            <OrderTotals items={cart} />
           </>
         )}
       </StepLayout>
@@ -434,17 +396,27 @@ export function OrderFlow({
             <Button variant="secondary" onClick={() => navigate('cart')}>
               Back to cart
             </Button>
-            <Button onClick={placeOrder} disabled={!canPlaceOrder}>
+            <Button type="submit" form="delivery-form" disabled={!canPlaceOrder}>
               Place order
             </Button>
           </>
         }
       >
-        <form className={styles.form} onSubmit={(event) => event.preventDefault()}>
+        <form
+          id="delivery-form"
+          className={styles.form}
+          onSubmit={(event) => {
+            event.preventDefault()
+            if (canPlaceOrder) {
+              placeOrder()
+            }
+          }}
+        >
           <label className={styles.field}>
             <span className={styles.fieldLabel}>Name</span>
             <input
               className={styles.input}
+              autoComplete="name"
               value={delivery.name}
               onChange={(event) =>
                 setDelivery((current) => ({ ...current, name: event.target.value }))
@@ -471,6 +443,7 @@ export function OrderFlow({
             <span className={styles.fieldLabel}>Delivery address</span>
             <input
               className={styles.input}
+              autoComplete="street-address"
               value={delivery.address}
               onChange={(event) =>
                 setDelivery((current) => ({ ...current, address: event.target.value }))
@@ -510,8 +483,12 @@ export function OrderFlow({
         <p className={styles.summaryValue}>{delivery.name}</p>
         <p className={styles.summaryMuted}>{delivery.phone}</p>
         <p className={styles.summaryMuted}>{delivery.address}</p>
-        <p className={styles.summaryLabel}>Instructions</p>
-        <p className={styles.summaryMuted}>{delivery.instructions}</p>
+        {delivery.instructions.trim() ? (
+          <>
+            <p className={styles.summaryLabel}>Instructions</p>
+            <p className={styles.summaryMuted}>{delivery.instructions}</p>
+          </>
+        ) : null}
         <p className={styles.summaryLabel}>Items</p>
         <ul className={styles.summaryList}>
           {cart.map((item) => (
@@ -521,22 +498,7 @@ export function OrderFlow({
             </li>
           ))}
         </ul>
-        <p className={styles.summarySubtotal}>
-          <span>Subtotal</span>
-          <span>{formatPrice(cartTotal(cart))}</span>
-        </p>
-        <p className={styles.summaryVat}>
-          <span>VAT ({Math.round(VAT_RATE * 100)}% included)</span>
-          <span>{formatPrice(vatIncludedIn(cartTotal(cart)))}</span>
-        </p>
-        <p className={styles.summaryVat}>
-          <span>Delivery</span>
-          <span>{formatPrice(DELIVERY_PRICE)}</span>
-        </p>
-        <p className={styles.summaryTotal}>
-          <span>Total</span>
-          <span>{formatPrice(orderTotal(cart))}</span>
-        </p>
+        <OrderTotals items={cart} variant="inline" />
       </div>
     </StepLayout>
   )
