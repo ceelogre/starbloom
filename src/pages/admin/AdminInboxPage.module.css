@@ -93,6 +93,12 @@
   font-size: var(--font-size-sm);
 }
 
+.preview {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  margin-top: var(--space-1);
+}
+
 .rowEnd {
   display: flex;
   flex-wrap: wrap;

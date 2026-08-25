@@ -8,3 +8,6 @@ project_id = "starbloom"
 # shared x-starbloom-signature header is what authorises the call instead.
 [functions.order-status-email]
 verify_jwt = false
+
+[functions.support-inquiry-email]
+verify_jwt = false

@@ -11,8 +11,8 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "functions:serve": "supabase functions serve order-status-email",
-    "functions:deploy": "supabase functions deploy order-status-email"
+    "functions:serve": "supabase functions serve",
+    "functions:deploy": "supabase functions deploy order-status-email && supabase functions deploy support-inquiry-email"
   },
   "dependencies": {
     "@fontsource-variable/fraunces": "^5.3.0",

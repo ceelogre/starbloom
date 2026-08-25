@@ -12,6 +12,9 @@ import { AdminLoginPage } from './pages/admin/AdminLoginPage'
 import { AdminOrderDetailPage } from './pages/admin/AdminOrderDetailPage'
 import { AdminProductPage } from './pages/admin/AdminProductPage'
 import { AdminShell } from './pages/admin/AdminShell'
+import { AdminSupportDetailPage } from './pages/admin/AdminSupportDetailPage'
+import { AdminSupportPage } from './pages/admin/AdminSupportPage'
+import { ContactPage } from './pages/ContactPage'
 import { ShopPage } from './pages/ShopPage'
 
 function App() {
@@ -20,6 +23,7 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<ShopPage />} />
+          <Route path="/contact" element={<ContactPage />} />
           <Route path="/login" element={<CustomerLoginPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
           <Route path="/admin/login" element={<AdminLoginPage />} />
@@ -33,6 +37,8 @@ function App() {
             <Route path="/admin" element={<AdminShell />}>
               <Route index element={<AdminInboxPage />} />
               <Route path="orders/:orderId" element={<AdminOrderDetailPage />} />
+              <Route path="support" element={<AdminSupportPage />} />
+              <Route path="support/:inquiryId" element={<AdminSupportDetailPage />} />
               <Route path="inventory" element={<AdminInventoryPage />} />
               <Route path="inventory/new" element={<AdminProductPage />} />
               <Route path="inventory/:productId" element={<AdminProductPage />} />

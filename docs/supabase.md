@@ -17,14 +17,17 @@ In the SQL editor, run in order:
 3. [`supabase/migrations/003_inventory.sql`](../supabase/migrations/003_inventory.sql)
 4. [`supabase/migrations/004_payment_methods.sql`](../supabase/migrations/004_payment_methods.sql)
 5. [`supabase/migrations/005_order_email_notifications.sql`](../supabase/migrations/005_order_email_notifications.sql)
+6. [`supabase/migrations/006_support_inquiries.sql`](../supabase/migrations/006_support_inquiries.sql)
 
-`001` creates `orders` / `order_items`, guest checkout RPC, and Realtime. `002` adds `profiles`, `orders.customer_id`, staff vs customer RLS, and attaches signed-in users to new orders. `003` adds the catalog (`products`, `product_variants`), stock tracking (`stock_movements`), and seeds the price menu. `004` adds `orders.payment_method`. `005` adds `orders.contact_email`, the `order_emails` log, and the trigger that asks the Edge Function to send status emails.
+`001` creates `orders` / `order_items`, guest checkout RPC, and Realtime. `002` adds `profiles`, `orders.customer_id`, staff vs customer RLS, and attaches signed-in users to new orders. `003` adds the catalog (`products`, `product_variants`), stock tracking (`stock_movements`), and seeds the price menu. `004` adds `orders.payment_method`. `005` adds `orders.contact_email`, the `order_emails` log, and the trigger that asks the Edge Function to send status emails. `006` adds `support_inquiries`, the public contact-form RPC, and the trigger that asks a second Edge Function to email staff.
 
 If Realtime was already enabled for `orders`, a duplicate-publication error on `001` can be ignored.
 
 `004` is safe to run more than once: it guards each step, and it rebuilds the `payment_method` type if that type holds labels which are no longer live.
 
 `005` is safe to run more than once, but it does nothing on its own — until section 6 is done, the trigger it installs finds no Vault secrets and only writes a warning.
+
+`006` is the same: the contact form still saves without mail setup, and the trigger only warns until section 7 is done.
 
 ## 2b. Inventory
 
@@ -76,14 +79,15 @@ Existing auth users get a `profiles` row when `002` runs. New sign-ins get a row
 - A customer session must not reach the admin inbox (the app also checks `profiles.role`).
 - Anyone may read **active** products and variants. Only staff can write to them or read `stock_movements`.
 - Only staff can read `order_emails`. Nobody writes to it through the API: the Edge Function uses the service role key.
+- Guest contact uses the anon key and `submit_support_inquiry`. Anon must **not** be able to list inquiries. Only staff can read them or update `status`.
 
 ## 5. Realtime
 
-Database → Replication (or Realtime) should include `public.orders` and `public.product_variants`. Inserts drive the admin badge, beep, and optional desktop notification. Customers subscribe to updates on their own orders.
+Database → Replication (or Realtime) should include `public.orders`, `public.product_variants`, and `public.support_inquiries`. Inserts drive the admin badge, beep, and optional desktop notification. Customers subscribe to updates on their own orders.
 
 ## 6. Order emails
 
-Customers get an email when an order is marked **confirmed** and again when it is marked **out for delivery**. Nothing else sends mail, and the address is optional: guests are offered a field at checkout, signed-in customers get the address on their account, and an order with no address is simply skipped.
+Customers get an email when an order is marked **confirmed** and again when it is marked **out for delivery**. The address is optional: guests are offered a field at checkout, signed-in customers get the address on their account, and an order with no address is simply skipped. Support inquiries are a separate mail path (section 7).
 
 The path is `orders.status` update → `orders_notify_status_email` trigger → `net.http_post` → the [`order-status-email`](../supabase/functions/order-status-email/index.ts) Edge Function → Resend. The trigger only asks; the function decides and records. Postgres cannot hold the Resend key, and the browser cannot read another customer's email out of `auth.users`, which is why this lives in a function rather than in the app.
 
@@ -154,3 +158,52 @@ delete from public.order_emails where order_id = '<uuid>' and status = 'confirme
 ```
 
 Bounces, spam complaints and per-message delivery detail live in the Resend dashboard; `order_emails.provider_id` is the message id to search for.
+
+## 7. Support emails
+
+A message from `/contact` lands in `support_inquiries` and in `/admin/support` whether mail is set up or not. When it is, staff also get an email they can reply to (Resend `reply_to` is the customer).
+
+The path is insert → `support_inquiries_notify_email` trigger → `net.http_post` → the [`support-inquiry-email`](../supabase/functions/support-inquiry-email/index.ts) Edge Function → Resend. It reuses the order-email Resend key, from-address, and `ORDER_EMAIL_SECRET`. Failures are swallowed the same way as order mail: a missing secret only warns, and the inquiry still saves.
+
+### 7a. Extra secrets
+
+After the order-email deploy in 6b, set the staff inbox and redeploy both functions:
+
+```bash
+npx supabase secrets set SUPPORT_INBOX_EMAIL=you@your-domain.com
+
+npm run functions:deploy
+```
+
+`SUPPORT_INBOX_EMAIL` is who receives contact-form mail. `ORDER_EMAIL_FROM` is still the from-address.
+
+### 7b. Tell Postgres where to knock
+
+One extra Vault secret, next to the two from 6c. The function URL is different; the signature is the **same** `ORDER_EMAIL_SECRET` already stored as `order_email_fn_secret`.
+
+```sql
+select vault.create_secret(
+  'https://<ref>.functions.supabase.co/support-inquiry-email',
+  'support_email_fn_url'
+);
+```
+
+### 7c. Checking
+
+Staff see send status at the bottom of `/admin/support/:id`. The same fields live on the inquiry row:
+
+```sql
+select id, email, email_sent_at, email_error, email_provider_id
+from public.support_inquiries
+order by created_at desc
+limit 20;
+```
+
+A row with `email_sent_at` set will not mail again. To retry a failure, clear the stamp and call the function (or re-run the HTTP request from `net._http_response`):
+
+```sql
+update public.support_inquiries
+set email_sent_at = null, email_error = null, email_provider_id = null
+where id = '<uuid>';
+```
+
