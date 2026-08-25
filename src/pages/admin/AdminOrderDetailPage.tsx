@@ -11,6 +11,7 @@ import {
   updateOrderStatus,
 } from '../../lib/orders'
 import { formatOrderTime, nextStatus, ORDER_STATUS_LABELS } from '../../lib/order-status'
+import { PAYMENT_METHOD_LABELS } from '../../lib/payment'
 import type { Order } from '../../types/order'
 import styles from './AdminOrderDetailPage.module.css'
 
@@ -135,7 +136,8 @@ export function AdminOrderDetailPage() {
 
         <p className={styles.statusLine}>
           {ORDER_STATUS_LABELS[order.status]}
-          {order.paymentStatus === 'paid' ? ' · Paid' : ' · Unpaid (COD)'}
+          {order.paymentStatus === 'paid' ? ' · Paid' : ' · Unpaid'}
+          {` · ${PAYMENT_METHOD_LABELS[order.paymentMethod]}`}
         </p>
         {order.cancelledReason ? (
           <p className={styles.muted}>Cancelled: {order.cancelledReason}</p>

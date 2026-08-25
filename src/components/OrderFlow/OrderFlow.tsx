@@ -26,6 +26,12 @@ import {
   MAX_LINE_QUANTITY,
 } from '../../lib/cart'
 import { placeGuestOrder } from '../../lib/orders'
+import {
+  DEFAULT_PAYMENT_METHOD,
+  PAYMENT_METHODS,
+  PAYMENT_METHOD_LABELS,
+  UPCOMING_PAYMENT_METHODS,
+} from '../../lib/payment'
 import { cheapestPrice, isProductSoldOut, sellableVariants } from '../../types/catalog'
 import type { Product, ProductTag, ProductVariant } from '../../types/catalog'
 import type {
@@ -33,6 +39,7 @@ import type {
   Category,
   DeliveryDetails,
   OrderStep,
+  PaymentMethod,
 } from '../../types/order'
 import styles from './OrderFlow.module.css'
 
@@ -55,8 +62,9 @@ const STEP_ORDER: Record<OrderStep, number> = {
   variant: 3,
   quantity: 4,
   cart: 5,
-  delivery: 6,
-  confirmation: 7,
+  payment: 6,
+  delivery: 7,
+  confirmation: 8,
 }
 
 const CATEGORY_ORDER: Category[] = ['meat', 'sausage']
@@ -68,12 +76,13 @@ function createCartItemId() {
 
 /** Picking a variant and a quantity read as one "how much?" step. */
 const CHECKOUT_PROGRESS = {
-  category: { current: 1, total: 5 },
-  product: { current: 2, total: 5 },
-  variant: { current: 3, total: 5 },
-  quantity: { current: 3, total: 5 },
-  cart: { current: 4, total: 5 },
-  delivery: { current: 5, total: 5 },
+  category: { current: 1, total: 6 },
+  product: { current: 2, total: 6 },
+  variant: { current: 3, total: 6 },
+  quantity: { current: 3, total: 6 },
+  cart: { current: 4, total: 6 },
+  payment: { current: 5, total: 6 },
+  delivery: { current: 6, total: 6 },
 } as const
 
 function variantDescription(variant: ProductVariant) {
@@ -102,6 +111,9 @@ export function OrderFlow({
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null)
   const [quantity, setQuantity] = useState<number | null>(null)
   const [cart, setCart] = useState<CartItem[]>([])
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
+    DEFAULT_PAYMENT_METHOD,
+  )
   const [delivery, setDelivery] = useState<DeliveryDetails>({
     name: '',
     phone: '',
@@ -263,6 +275,10 @@ export function OrderFlow({
     }
   }
 
+  function selectPaymentMethod(method: PaymentMethod) {
+    navigate('delivery', () => setPaymentMethod(method))
+  }
+
   async function placeOrder() {
     if (isPlacing || !canPlaceOrder || cart.length === 0) {
       return
@@ -272,7 +288,7 @@ export function OrderFlow({
     setIsPlacing(true)
 
     try {
-      const placed = await placeGuestOrder(cart, delivery)
+      const placed = await placeGuestOrder(cart, delivery, paymentMethod)
       setOrderNumber(placed.orderNumber)
       navigate('confirmation')
     } catch (error) {
@@ -294,6 +310,7 @@ export function OrderFlow({
       setCart([])
       setOrderNumber(null)
       setPlaceError(null)
+      setPaymentMethod(DEFAULT_PAYMENT_METHOD)
       setDelivery({ name: '', phone: '', address: '', instructions: '' })
     })
     void loadCatalog()
@@ -593,15 +610,15 @@ export function OrderFlow({
     return (
       <StepLayout
         title="Your cart"
-        subtitle="Adjust quantities, then continue to delivery."
+        subtitle="Adjust quantities, then choose how to pay."
         progress={CHECKOUT_PROGRESS.cart}
         actions={
           <>
             <Button variant="secondary" onClick={() => navigate('category')}>
               Add more items
             </Button>
-            <Button onClick={() => navigate('delivery')} disabled={cart.length === 0}>
-              Continue to delivery
+            <Button onClick={() => navigate('payment')} disabled={cart.length === 0}>
+              Continue to payment
             </Button>
           </>
         }
@@ -661,6 +678,47 @@ export function OrderFlow({
     )
   }
 
+  if (step === 'payment') {
+    return (
+      <StepLayout
+        title="How would you like to pay?"
+        subtitle="Nothing is charged now."
+        progress={CHECKOUT_PROGRESS.payment}
+        actions={
+          <Button variant="secondary" onClick={() => navigate('cart')}>
+            Back to cart
+          </Button>
+        }
+      >
+        {PAYMENT_METHODS.map((option) => (
+          <SelectionCard
+            key={option.id}
+            label={option.label}
+            description={option.description}
+            selected={paymentMethod === option.id}
+            onClick={() => selectPaymentMethod(option.id)}
+          />
+        ))}
+        {UPCOMING_PAYMENT_METHODS.length > 0 ? (
+          <div className={styles.group}>
+            <h2 className={styles.groupTitle}>Coming soon</h2>
+            {UPCOMING_PAYMENT_METHODS.map((option) => (
+              <SelectionCard
+                key={option.label}
+                label={option.label}
+                description={option.description}
+                disabled
+              />
+            ))}
+          </div>
+        ) : null}
+        <p className={styles.hint}>
+          We’re setting up online payment. Until then, orders are settled at the door.
+        </p>
+      </StepLayout>
+    )
+  }
+
   if (step === 'delivery') {
     return (
       <StepLayout
@@ -669,8 +727,8 @@ export function OrderFlow({
         progress={CHECKOUT_PROGRESS.delivery}
         actions={
           <>
-            <Button variant="secondary" onClick={() => navigate('cart')}>
-              Back to cart
+            <Button variant="secondary" onClick={() => navigate('payment')}>
+              Back to payment
             </Button>
             <Button
               type="submit"
@@ -693,6 +751,9 @@ export function OrderFlow({
             ))}
           </ul>
           <OrderTotals items={cart} variant="inline" />
+          <p className={styles.summaryNote}>
+            Payment: {PAYMENT_METHOD_LABELS[paymentMethod]}
+          </p>
         </div>
         {placeError ? (
           <p className={styles.formError} role="alert">
@@ -802,6 +863,8 @@ export function OrderFlow({
               <p className={styles.summaryMuted}>{delivery.instructions}</p>
             </>
           ) : null}
+          <p className={styles.summaryLabel}>Payment</p>
+          <p className={styles.summaryValue}>{PAYMENT_METHOD_LABELS[paymentMethod]}</p>
           <p className={styles.summaryLabel}>Items</p>
           <ul className={styles.summaryList}>
             {cart.map((item) => (
@@ -813,8 +876,8 @@ export function OrderFlow({
           </ul>
           <OrderTotals items={cart} variant="inline" />
           <p className={styles.nextStep}>
-            No payment is taken here. We’ll confirm the order and arrange delivery
-            by phone.
+            Nothing was charged here. Pay the driver when your order arrives — we’ll
+            confirm the details by phone first.
           </p>
           {user ? (
             <p className={styles.nextStep}>

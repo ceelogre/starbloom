@@ -15,10 +15,13 @@ In the SQL editor, run in order:
 1. [`supabase/migrations/001_orders.sql`](../supabase/migrations/001_orders.sql)
 2. [`supabase/migrations/002_customer_tracking.sql`](../supabase/migrations/002_customer_tracking.sql)
 3. [`supabase/migrations/003_inventory.sql`](../supabase/migrations/003_inventory.sql)
+4. [`supabase/migrations/004_payment_methods.sql`](../supabase/migrations/004_payment_methods.sql)
 
-`001` creates `orders` / `order_items`, guest checkout RPC, and Realtime. `002` adds `profiles`, `orders.customer_id`, staff vs customer RLS, and attaches signed-in users to new orders. `003` adds the catalog (`products`, `product_variants`), stock tracking (`stock_movements`), and seeds the price menu.
+`001` creates `orders` / `order_items`, guest checkout RPC, and Realtime. `002` adds `profiles`, `orders.customer_id`, staff vs customer RLS, and attaches signed-in users to new orders. `003` adds the catalog (`products`, `product_variants`), stock tracking (`stock_movements`), and seeds the price menu. `004` adds `orders.payment_method`.
 
 If Realtime was already enabled for `orders`, a duplicate-publication error on `001` can be ignored.
+
+`004` is safe to run more than once: it guards each step, and it rebuilds the `payment_method` type if that type holds labels which are no longer live.
 
 ## 2b. Inventory
 
@@ -29,6 +32,20 @@ Everything the shop sells comes from `products` and `product_variants`. A produc
 - `place_guest_order` now takes only `variant_id` and `quantity` per line. Prices, VAT, and totals are read from `product_variants`, so a tampered browser cannot change what an order costs. The delivery fee and VAT rate are constants inside that function — change them there and in [`src/data/products.ts`](../src/data/products.ts) together.
 - Orders are rejected when a tracked variant does not have enough stock, so overselling is not possible even with two customers checking out at once.
 - Set `track_stock` to false on a variant that is always available (it then never blocks an order).
+
+## 2c. Payment methods
+
+`orders.payment_method` records how a customer chose to pay. The `payment_method` enum only carries methods that can actually take money, so today it holds `cash_on_delivery` alone and `place_guest_order` refuses anything else — a tampered browser cannot file an order as prepaid by card.
+
+Checkout also lists mobile money and card under "Coming soon". Those are copy in `UPCOMING_PAYMENT_METHODS` ([`src/lib/payment.ts`](../src/lib/payment.ts)) and cannot be selected or stored. Turning one on takes two steps:
+
+```sql
+alter type public.payment_method add value 'mobile_money';
+```
+
+then move its entry into `PAYMENT_METHODS` and give it a label in `PAYMENT_METHOD_LABELS`. The RPC accepts whatever the enum knows, so the migration is what makes a method live.
+
+`payment_method` is what the customer chose; `payment_status` is whether the money arrived. Staff still mark an order paid by hand at `/admin/orders/:id`.
 
 ## 3. Auth
 

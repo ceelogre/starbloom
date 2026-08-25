@@ -34,8 +34,8 @@ const STEPS = [
     icon: 'quantity' as const,
   },
   {
-    title: 'Add delivery details',
-    body: 'Name, phone, address, and any notes. Then place the order — no account needed.',
+    title: 'Pay on delivery',
+    body: 'Leave your name, phone, and address, then pay the driver at the door. No account needed.',
     icon: 'deliver' as const,
   },
 ]
@@ -190,8 +190,8 @@ export function HomeLanding({
               Order in three steps
             </h2>
             <p className={styles.sectionLede}>
-              No account. Add items to a cart, tell us where to deliver, and we
-              take it from there.
+              No account, and nothing to pay up front. Add items to a cart, tell us
+              where to deliver, and we take it from there.
             </p>
           </div>
           <ol className={styles.stepGrid}>

@@ -35,6 +35,12 @@
   box-shadow: none;
 }
 
+.selected,
+.selected:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary-subtle);
+}
+
 .icon {
   font-size: var(--font-size-2xl);
   line-height: 1;
