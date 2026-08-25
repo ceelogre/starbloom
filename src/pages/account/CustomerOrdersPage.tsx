@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router'
+import { useAuth } from '../../auth/useAuth'
 import { formatPrice } from '../../data/products'
 import { fetchMyOrders } from '../../lib/orders'
 import { formatOrderTime, ORDER_STATUS_LABELS } from '../../lib/order-status'
@@ -8,6 +9,7 @@ import type { Order } from '../../types/order'
 import styles from '../admin/AdminInboxPage.module.css'
 
 export function CustomerOrdersPage() {
+  const { isStaff } = useAuth()
   const [orders, setOrders] = useState<Order[]>([])
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -49,6 +51,13 @@ export function CustomerOrdersPage() {
       <div className={styles.heading}>
         <h1 className={styles.title}>Your orders</h1>
       </div>
+      {isStaff ? (
+        <p className={styles.muted}>
+          Staff tools are in the{' '}
+          <Link to="/admin">order inbox</Link>
+          . This page only shows orders tied to your customer account.
+        </p>
+      ) : null}
 
       {error ? <p className={styles.error}>{error}</p> : null}
       {loading ? <p className={styles.muted}>Loading…</p> : null}

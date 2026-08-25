@@ -26,20 +26,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    let { data } = await supabase
-      .from('profiles')
-      .select('role, display_name')
-      .eq('id', nextUser.id)
-      .maybeSingle()
-
-    if (!data) {
-      await new Promise((resolve) => window.setTimeout(resolve, 400))
-      const retry = await supabase
+    let data: ProfileRow | null = null
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      const result = await supabase
         .from('profiles')
         .select('role, display_name')
         .eq('id', nextUser.id)
         .maybeSingle()
-      data = retry.data
+      data = result.data as ProfileRow | null
+      if (data) {
+        break
+      }
+      await new Promise((resolve) => window.setTimeout(resolve, 300 * (attempt + 1)))
     }
 
     const profile = data as ProfileRow | null

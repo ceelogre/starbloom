@@ -1,5 +1,5 @@
-import { lineTotal } from './cart'
-import { isSupabaseConfigured, supabase } from './supabase'
+import { formatQuantity } from '../data/products'
+import { requireSupabase, supabase } from './supabase'
 import type {
   CartItem,
   DeliveryDetails,
@@ -35,32 +35,21 @@ type OrderRow = {
 type OrderItemRow = {
   id: string
   order_id: string
+  variant_id: string | null
   category: 'meat' | 'sausage'
   product_id: string | null
   product_name: string | null
   quantity: number
-  unit: 'kg' | 'pack'
+  unit: 'kg' | 'box' | 'pack'
   unit_price: number
   line_total: number
 }
 
-function requireSupabase() {
-  if (!isSupabaseConfigured()) {
-    throw new Error(
-      'Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env.',
-    )
-  }
-}
-
+/** Prices and totals come from the catalog, so only the selection is sent. */
 function cartItemsPayload(items: CartItem[]) {
   return items.map((item) => ({
-    category: item.category,
-    product_id: item.category === 'meat' ? item.productId : null,
-    product_name: item.category === 'meat' ? item.productName : 'Sausage',
+    variant_id: item.variantId,
     quantity: item.quantity,
-    unit: item.unit,
-    unit_price: item.unitPrice,
-    line_total: lineTotal(item),
   }))
 }
 
@@ -69,6 +58,7 @@ function mapLine(row: OrderItemRow): OrderLine {
     id: row.id,
     orderId: row.order_id,
     category: row.category,
+    variantId: row.variant_id,
     productId: row.product_id,
     productName: row.product_name,
     quantity: Number(row.quantity),
@@ -158,7 +148,6 @@ function mapOrder(row: OrderRow, items: OrderLine[] = []): Order {
 export async function placeGuestOrder(
   cart: CartItem[],
   delivery: DeliveryDetails,
-  money: { subtotal: number; deliveryFee: number; vatAmount: number; total: number },
 ): Promise<PlaceOrderResult> {
   requireSupabase()
 
@@ -167,10 +156,6 @@ export async function placeGuestOrder(
     p_phone: delivery.phone.trim(),
     p_address: delivery.address.trim(),
     p_instructions: delivery.instructions.trim(),
-    p_subtotal: money.subtotal,
-    p_delivery_fee: money.deliveryFee,
-    p_vat_amount: money.vatAmount,
-    p_total: money.total,
     p_items: cartItemsPayload(cart),
   })
 
@@ -275,6 +260,7 @@ export async function markOrderPaid(id: string) {
   }
 }
 
+/** Goes through the RPC so cancelling also returns the stock. */
 export async function cancelOrder(id: string, reason: string) {
   requireSupabase()
 
@@ -283,13 +269,10 @@ export async function cancelOrder(id: string, reason: string) {
     throw new Error('A cancel reason is required.')
   }
 
-  const { error } = await supabase
-    .from('orders')
-    .update({
-      status: 'cancelled' satisfies OrderStatus,
-      cancelled_reason: trimmed,
-    })
-    .eq('id', id)
+  const { error } = await supabase.rpc('staff_cancel_order', {
+    p_order_id: id,
+    p_reason: trimmed,
+  })
 
   if (error) {
     throw new Error(error.message)
@@ -297,9 +280,11 @@ export async function cancelOrder(id: string, reason: string) {
 }
 
 export function formatLineLabel(line: OrderLine) {
-  const name =
-    line.productName ?? (line.category === 'sausage' ? 'Sausage' : 'Item')
-  const unitLabel =
-    line.unit === 'kg' ? 'kg' : line.quantity === 1 ? 'pack' : 'packs'
-  return `${name} — ${line.quantity} ${unitLabel}`
+  const name = line.productName ?? (line.category === 'sausage' ? 'Sausage' : 'Item')
+
+  if (line.unit === 'pack') {
+    return `${name} — ${line.quantity} ${line.quantity === 1 ? 'pack' : 'packs'}`
+  }
+
+  return `${name} — ${formatQuantity(line.quantity, line.unit)}`
 }

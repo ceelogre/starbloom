@@ -1,28 +1,31 @@
 import { Package, ShoppingBag, Truck } from 'lucide-react'
 import { Button } from '../Button/Button'
 import {
+  CATEGORY_DESCRIPTIONS,
+  CATEGORY_LABELS,
   DELIVERY_PRICE,
-  MEAT_PRICE_PER_KG,
-  MEAT_PRODUCTS,
-  SAUSAGE_LABEL,
-  SAUSAGE_PRICE_PER_PACK,
   VAT_RATE,
   formatPrice,
 } from '../../data/products'
+import { isProductSoldOut, sellableVariants } from '../../types/catalog'
+import type { Product } from '../../types/catalog'
+import type { Category } from '../../types/order'
 import heroImageWebp from '../../assets/startb3.webp'
 import heroImageJpg from '../../assets/startb3.jpg'
 import styles from './HomeLanding.module.css'
 
 type HomeLandingProps = {
+  catalog: Product[]
   onStartOrder: () => void
-  onStartMeat: () => void
-  onStartSausage: () => void
+  onStartCategory: (category: Category) => void
 }
+
+const CATEGORY_ORDER: Category[] = ['meat', 'sausage']
 
 const STEPS = [
   {
     title: 'Pick a product',
-    body: 'Pork ribs and ham by the kilogram, or sausage by the pack.',
+    body: 'Pork cuts by the kilogram, or sausage by the box or the kilo.',
     icon: 'choose' as const,
   },
   {
@@ -37,13 +40,46 @@ const STEPS = [
   },
 ]
 
+type CategorySummary = {
+  category: Category
+  fromPrice: number | null
+  fromUnit: string
+  names: string
+  soldOut: boolean
+}
+
+function summarise(catalog: Product[], category: Category): CategorySummary | null {
+  const products = catalog.filter((product) => product.category === category)
+
+  if (products.length === 0) {
+    return null
+  }
+
+  const available = products.filter((product) => !isProductSoldOut(product))
+  const cheapest = available
+    .flatMap(sellableVariants)
+    .sort((a, b) => a.price - b.price)[0]
+
+  return {
+    category,
+    fromPrice: cheapest?.price ?? null,
+    fromUnit: cheapest?.unit ?? 'kg',
+    names: (available.length > 0 ? available : products)
+      .map((product) => product.name)
+      .join(' · '),
+    soldOut: available.length === 0,
+  }
+}
+
 export function HomeLanding({
+  catalog,
   onStartOrder,
-  onStartMeat,
-  onStartSausage,
+  onStartCategory,
 }: HomeLandingProps) {
   const vatPercent = Math.round(VAT_RATE * 100)
-  const meatNames = MEAT_PRODUCTS.map((product) => product.name.toLowerCase()).join(' and ')
+  const summaries = CATEGORY_ORDER.map((category) => summarise(catalog, category)).filter(
+    (summary): summary is CategorySummary => summary !== null,
+  )
 
   return (
     <div className={styles.page}>
@@ -78,20 +114,17 @@ export function HomeLanding({
             </a>
           </div>
           <dl className={styles.highlights}>
-            <div>
-              <dt>Meat</dt>
-              <dd>
-                {formatPrice(MEAT_PRICE_PER_KG)}
-                <span> per kg</span>
-              </dd>
-            </div>
-            <div>
-              <dt>Sausage</dt>
-              <dd>
-                {formatPrice(SAUSAGE_PRICE_PER_PACK)}
-                <span> per pack</span>
-              </dd>
-            </div>
+            {summaries.map((summary) =>
+              summary.fromPrice === null ? null : (
+                <div key={summary.category}>
+                  <dt>{CATEGORY_LABELS[summary.category]}</dt>
+                  <dd>
+                    {formatPrice(summary.fromPrice)}
+                    <span> per {summary.fromUnit}</span>
+                  </dd>
+                </div>
+              ),
+            )}
             <div>
               <dt>Delivery</dt>
               <dd>
@@ -111,35 +144,36 @@ export function HomeLanding({
               What you can order today
             </h2>
             <p className={styles.sectionLede}>
-              Two ranges, one checkout. VAT ({vatPercent}%) is included in every
-              listed price.
+              VAT ({vatPercent}%) is included in every listed price.
             </p>
           </div>
           <div className={styles.menuGrid}>
-            <button type="button" className={styles.menuCard} onClick={onStartMeat}>
-              <p className={styles.menuKicker}>By the kilogram</p>
-              <h3 className={styles.menuTitle}>Pork meat</h3>
-              <p className={styles.menuMeta}>{meatNames}</p>
-              <p className={styles.menuPrice}>
-                {formatPrice(MEAT_PRICE_PER_KG)}
-                <span> / kg</span>
-              </p>
-              <span className={styles.menuAction}>Order meat</span>
-            </button>
-            <button
-              type="button"
-              className={styles.menuCard}
-              onClick={onStartSausage}
-            >
-              <p className={styles.menuKicker}>By the pack</p>
-              <h3 className={styles.menuTitle}>{SAUSAGE_LABEL}</h3>
-              <p className={styles.menuMeta}>Ready-quality packs for the table</p>
-              <p className={styles.menuPrice}>
-                {formatPrice(SAUSAGE_PRICE_PER_PACK)}
-                <span> / pack</span>
-              </p>
-              <span className={styles.menuAction}>Order sausage</span>
-            </button>
+            {summaries.map((summary) => (
+              <button
+                key={summary.category}
+                type="button"
+                className={styles.menuCard}
+                onClick={() => onStartCategory(summary.category)}
+                disabled={summary.soldOut}
+              >
+                <p className={styles.menuKicker}>
+                  {CATEGORY_DESCRIPTIONS[summary.category]}
+                </p>
+                <h3 className={styles.menuTitle}>{CATEGORY_LABELS[summary.category]}</h3>
+                <p className={styles.menuMeta}>{summary.names}</p>
+                {summary.fromPrice === null ? null : (
+                  <p className={styles.menuPrice}>
+                    {formatPrice(summary.fromPrice)}
+                    <span> / {summary.fromUnit}</span>
+                  </p>
+                )}
+                <span className={styles.menuAction}>
+                  {summary.soldOut
+                    ? 'Sold out'
+                    : `Order ${CATEGORY_LABELS[summary.category].toLowerCase()}`}
+                </span>
+              </button>
+            ))}
           </div>
         </div>
       </section>

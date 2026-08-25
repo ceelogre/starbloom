@@ -8,17 +8,26 @@ import { OrderTotals } from '../OrderTotals/OrderTotals'
 import { SelectionCard } from '../SelectionCard/SelectionCard'
 import { StepLayout } from '../StepLayout/StepLayout'
 import {
-  MEAT_PRICE_PER_KG,
-  MEAT_PRODUCTS,
-  MEAT_QUANTITY_OPTIONS,
-  SAUSAGE_QUANTITY_OPTIONS,
-  SAUSAGE_PRICE_PER_PACK,
-  SAUSAGE_LABEL,
+  CATEGORY_DESCRIPTIONS,
+  CATEGORY_LABELS,
+  TAG_LABELS,
   formatPrice,
-  unitPriceFor,
+  formatQuantity,
+  quantityOptionsFor,
+  quantityStepFor,
 } from '../../data/products'
-import { formatCartItem, lineTotal, mergeCartItem, adjustCartQuantity, moneyFromCart, MAX_LINE_QUANTITY } from '../../lib/cart'
+import { fetchCatalog } from '../../lib/catalog'
+import {
+  formatCartItem,
+  lineTotal,
+  maxQuantityFor,
+  mergeCartItem,
+  adjustCartQuantity,
+  MAX_LINE_QUANTITY,
+} from '../../lib/cart'
 import { placeGuestOrder } from '../../lib/orders'
+import { cheapestPrice, isProductSoldOut, sellableVariants } from '../../types/catalog'
+import type { Product, ProductTag, ProductVariant } from '../../types/catalog'
 import type {
   CartItem,
   Category,
@@ -27,10 +36,15 @@ import type {
 } from '../../types/order'
 import styles from './OrderFlow.module.css'
 
+export type StepRequest = {
+  step: OrderStep
+  category?: Category
+}
+
 type OrderFlowProps = {
   onCartChange: (count: number) => void
   onStepChange: (step: OrderStep) => void
-  requestedStep: OrderStep | null
+  requestedStep: StepRequest | null
   onRequestedStepHandled: () => void
 }
 
@@ -38,23 +52,40 @@ const STEP_ORDER: Record<OrderStep, number> = {
   home: 0,
   category: 1,
   product: 2,
-  quantity: 3,
-  cart: 4,
-  delivery: 5,
-  confirmation: 6,
+  variant: 3,
+  quantity: 4,
+  cart: 5,
+  delivery: 6,
+  confirmation: 7,
 }
+
+const CATEGORY_ORDER: Category[] = ['meat', 'sausage']
+const TAG_ORDER: ProductTag[] = ['smoked', 'fresh']
 
 function createCartItemId() {
   return crypto.randomUUID()
 }
 
+/** Picking a variant and a quantity read as one "how much?" step. */
 const CHECKOUT_PROGRESS = {
-  category: { current: 1, total: 4 },
-  product: { current: 1, total: 4 },
-  quantity: { current: 2, total: 4 },
-  cart: { current: 3, total: 4 },
-  delivery: { current: 4, total: 4 },
+  category: { current: 1, total: 5 },
+  product: { current: 2, total: 5 },
+  variant: { current: 3, total: 5 },
+  quantity: { current: 3, total: 5 },
+  cart: { current: 4, total: 5 },
+  delivery: { current: 5, total: 5 },
 } as const
+
+function variantDescription(variant: ProductVariant) {
+  const price = `${formatPrice(variant.price)} / ${variant.unit}`
+
+  // Only worth mentioning stock when it limits what can be ordered.
+  if (!variant.trackStock || variant.stockQuantity > MAX_LINE_QUANTITY) {
+    return price
+  }
+
+  return `${price} · ${formatQuantity(variant.stockQuantity, variant.unit)} left`
+}
 
 export function OrderFlow({
   onCartChange,
@@ -63,8 +94,12 @@ export function OrderFlow({
   onRequestedStepHandled,
 }: OrderFlowProps) {
   const [step, setStep] = useState<OrderStep>('home')
+  const [catalog, setCatalog] = useState<Product[]>([])
+  const [catalogError, setCatalogError] = useState<string | null>(null)
+  const [isLoadingCatalog, setIsLoadingCatalog] = useState(true)
   const [category, setCategory] = useState<Category | null>(null)
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null)
+  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null)
   const [quantity, setQuantity] = useState<number | null>(null)
   const [cart, setCart] = useState<CartItem[]>([])
   const [delivery, setDelivery] = useState<DeliveryDetails>({
@@ -80,7 +115,27 @@ export function OrderFlow({
   const stepRef = useRef(step)
   stepRef.current = step
 
-  const selectedProduct = MEAT_PRODUCTS.find((product) => product.id === selectedProductId)
+  const selectedProduct = catalog.find((product) => product.id === selectedProductId)
+  const selectedVariant = selectedProduct?.variants.find(
+    (variant) => variant.id === selectedVariantId,
+  )
+
+  const loadCatalog = useCallback(async () => {
+    setCatalogError(null)
+    try {
+      setCatalog(await fetchCatalog())
+    } catch (error) {
+      setCatalogError(
+        error instanceof Error ? error.message : 'Could not load the menu.',
+      )
+    } finally {
+      setIsLoadingCatalog(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    void loadCatalog()
+  }, [loadCatalog])
 
   const navigate = useCallback((next: OrderStep, prepare?: () => void) => {
     const current = stepRef.current
@@ -111,6 +166,7 @@ export function OrderFlow({
   function resetSelection() {
     setCategory(null)
     setSelectedProductId(null)
+    setSelectedVariantId(null)
     setQuantity(null)
   }
 
@@ -123,49 +179,64 @@ export function OrderFlow({
   }
 
   function selectCategory(nextCategory: Category) {
-    navigate(nextCategory === 'meat' ? 'product' : 'quantity', () => {
+    navigate('product', () => {
       setCategory(nextCategory)
       setSelectedProductId(null)
+      setSelectedVariantId(null)
       setQuantity(null)
     })
   }
 
-  function selectProduct(productId: string) {
-    navigate('quantity', () => {
-      setSelectedProductId(productId)
-      setQuantity(null)
-    })
-  }
+  function selectProduct(product: Product) {
+    const options = sellableVariants(product)
 
-  function addToCart() {
-    if (!category || quantity === null) {
+    if (options.length === 0) {
       return
     }
 
-    let nextItem: CartItem
+    // One way to buy it means there is nothing to choose between.
+    const only = options.length === 1 ? options[0] : null
 
-    if (category === 'meat') {
-      if (!selectedProduct) {
-        return
-      }
+    navigate(only ? 'quantity' : 'variant', () => {
+      setCategory(product.category)
+      setSelectedProductId(product.id)
+      setSelectedVariantId(only?.id ?? null)
+      setQuantity(null)
+    })
+  }
 
-      nextItem = {
-        id: createCartItemId(),
-        category: 'meat',
-        productId: selectedProduct.id,
-        productName: selectedProduct.name,
-        quantity,
-        unit: 'kg',
-        unitPrice: unitPriceFor('meat'),
-      }
-    } else {
-      nextItem = {
-        id: createCartItemId(),
-        category: 'sausage',
-        quantity,
-        unit: 'pack',
-        unitPrice: unitPriceFor('sausage'),
-      }
+  function selectVariant(variantId: string) {
+    navigate('quantity', () => {
+      setSelectedVariantId(variantId)
+      setQuantity(null)
+    })
+  }
+
+  function backFromQuantity() {
+    if (!selectedProduct || sellableVariants(selectedProduct).length <= 1) {
+      navigate('product')
+      return
+    }
+
+    navigate('variant')
+  }
+
+  function addToCart() {
+    if (!selectedProduct || !selectedVariant || quantity === null) {
+      return
+    }
+
+    const nextItem: CartItem = {
+      id: createCartItemId(),
+      category: selectedProduct.category,
+      productId: selectedProduct.id,
+      productName: selectedProduct.name,
+      variantId: selectedVariant.id,
+      variantLabel: selectedVariant.label,
+      quantity,
+      unit: selectedVariant.unit,
+      unitPrice: selectedVariant.price,
+      stockLimit: selectedVariant.trackStock ? selectedVariant.stockQuantity : null,
     }
 
     navigate('cart', () => {
@@ -201,7 +272,7 @@ export function OrderFlow({
     setIsPlacing(true)
 
     try {
-      const placed = await placeGuestOrder(cart, delivery, moneyFromCart(cart))
+      const placed = await placeGuestOrder(cart, delivery)
       setOrderNumber(placed.orderNumber)
       navigate('confirmation')
     } catch (error) {
@@ -210,6 +281,8 @@ export function OrderFlow({
           ? error.message
           : 'Could not place the order. Please try again.',
       )
+      // Stock may have moved while the customer was filling the form.
+      void loadCatalog()
     } finally {
       setIsPlacing(false)
     }
@@ -223,6 +296,7 @@ export function OrderFlow({
       setPlaceError(null)
       setDelivery({ name: '', phone: '', address: '', instructions: '' })
     })
+    void loadCatalog()
   }
 
   useEffect(() => {
@@ -248,33 +322,37 @@ export function OrderFlow({
       return
     }
 
-    if (requestedStep === 'home') {
+    if (requestedStep.step === 'home') {
       if (stepRef.current !== 'home') {
         navigate('home', resetSelection)
       }
-    } else if (requestedStep === 'category') {
+    } else if (requestedStep.step === 'category') {
       navigate('category', resetSelection)
-    } else if (requestedStep === 'product') {
+    } else if (requestedStep.step === 'product') {
       navigate('product', () => {
-        setCategory('meat')
+        setCategory(requestedStep.category ?? 'sausage')
         setSelectedProductId(null)
+        setSelectedVariantId(null)
         setQuantity(null)
       })
-    } else if (requestedStep === 'quantity') {
-      navigate('quantity', () => {
-        setCategory('sausage')
-        setSelectedProductId(null)
-        setQuantity(null)
-      })
-    } else if (requestedStep === 'cart' && cart.length > 0) {
+    } else if (requestedStep.step === 'cart' && cart.length > 0) {
       navigate('cart')
     }
 
     onRequestedStepHandled()
   }, [requestedStep, cart.length, onRequestedStepHandled, navigate])
 
-  const canAddToCart =
-    quantity !== null && (category === 'sausage' || selectedProduct !== undefined)
+  // The flow only offers what can actually be bought right now.
+  const available = catalog.filter((product) => !isProductSoldOut(product))
+  const categories = CATEGORY_ORDER.filter((value) =>
+    available.some((product) => product.category === value),
+  )
+  const categoryProducts = available.filter((product) => product.category === category)
+  const quantityLimit = selectedVariant ? maxQuantityFor({
+    stockLimit: selectedVariant.trackStock ? selectedVariant.stockQuantity : null,
+  }) : 0
+
+  const canAddToCart = quantity !== null && selectedVariant !== undefined
 
   const canPlaceOrder =
     delivery.name.trim().length > 0 &&
@@ -284,10 +362,38 @@ export function OrderFlow({
   if (step === 'home') {
     return (
       <HomeLanding
+        catalog={catalog}
         onStartOrder={startOrder}
-        onStartMeat={() => selectCategory('meat')}
-        onStartSausage={() => selectCategory('sausage')}
+        onStartCategory={selectCategory}
       />
+    )
+  }
+
+  if (isLoadingCatalog) {
+    return (
+      <StepLayout title="Loading the menu…">
+        <p className={styles.emptyState}>One moment.</p>
+      </StepLayout>
+    )
+  }
+
+  if (catalogError) {
+    return (
+      <StepLayout
+        title="The menu didn’t load"
+        actions={
+          <>
+            <Button variant="secondary" onClick={goHome}>
+              Back to homepage
+            </Button>
+            <Button onClick={() => void loadCatalog()}>Try again</Button>
+          </>
+        }
+      >
+        <p className={styles.formError} role="alert">
+          {catalogError}
+        </p>
+      </StepLayout>
     )
   }
 
@@ -295,7 +401,7 @@ export function OrderFlow({
     return (
       <StepLayout
         title="What are you ordering?"
-        subtitle="Pork meat by the kilogram, or sausage by the pack."
+        subtitle="Prices include VAT."
         progress={CHECKOUT_PROGRESS.category}
         actions={
           <>
@@ -308,25 +414,59 @@ export function OrderFlow({
           </>
         }
       >
-        <SelectionCard
-          label="Pork meat"
-          description={`${MEAT_PRODUCTS.map((product) => product.name).join(' and ')} · ${formatPrice(MEAT_PRICE_PER_KG)} per kg`}
-          onClick={() => selectCategory('meat')}
-        />
-        <SelectionCard
-          label={SAUSAGE_LABEL}
-          description={`${formatPrice(SAUSAGE_PRICE_PER_PACK)} per pack`}
-          onClick={() => selectCategory('sausage')}
-        />
+        {categories.length === 0 ? (
+          <p className={styles.emptyState}>Nothing is available right now.</p>
+        ) : (
+          categories.map((value) => {
+            const from = available
+              .filter((product) => product.category === value)
+              .map(cheapestPrice)
+              .filter((price): price is number => price !== null)
+
+            return (
+              <SelectionCard
+                key={value}
+                label={CATEGORY_LABELS[value]}
+                description={
+                  from.length > 0
+                    ? `${CATEGORY_DESCRIPTIONS[value]} From ${formatPrice(Math.min(...from))}.`
+                    : CATEGORY_DESCRIPTIONS[value]
+                }
+                onClick={() => selectCategory(value)}
+              />
+            )
+          })
+        )}
       </StepLayout>
     )
   }
 
   if (step === 'product') {
+    const tags = TAG_ORDER.filter((tag) =>
+      categoryProducts.some((product) => product.tag === tag),
+    )
+    const untagged = categoryProducts.filter((product) => product.tag === null)
+
+    const renderProduct = (product: Product) => {
+      const from = cheapestPrice(product)
+
+      return (
+        <SelectionCard
+          key={product.id}
+          label={product.name}
+          description={
+            product.description ||
+            (from === null ? undefined : `From ${formatPrice(from)}`)
+          }
+          onClick={() => selectProduct(product)}
+        />
+      )
+    }
+
     return (
       <StepLayout
-        title="Choose your cut"
-        subtitle={`${formatPrice(MEAT_PRICE_PER_KG)} per kg, VAT included.`}
+        title={category ? CATEGORY_LABELS[category] : 'Choose a product'}
+        subtitle="Pick what you want, then how much."
         progress={CHECKOUT_PROGRESS.product}
         actions={
           <Button variant="secondary" onClick={() => navigate('category')}>
@@ -334,43 +474,64 @@ export function OrderFlow({
           </Button>
         }
       >
-        {MEAT_PRODUCTS.map((product) => (
+        {categoryProducts.length === 0 ? (
+          <p className={styles.emptyState}>
+            Everything in this range is sold out right now. Try the other range, or
+            check back later.
+          </p>
+        ) : null}
+        {untagged.map(renderProduct)}
+        {tags.map((tag) => (
+          <div key={tag} className={styles.group}>
+            <h2 className={styles.groupTitle}>{TAG_LABELS[tag]}</h2>
+            {categoryProducts
+              .filter((product) => product.tag === tag)
+              .map(renderProduct)}
+          </div>
+        ))}
+      </StepLayout>
+    )
+  }
+
+  if (step === 'variant' && selectedProduct) {
+    return (
+      <StepLayout
+        title={selectedProduct.name}
+        subtitle="How would you like it?"
+        progress={CHECKOUT_PROGRESS.variant}
+        actions={
+          <Button variant="secondary" onClick={() => navigate('product')}>
+            Back
+          </Button>
+        }
+      >
+        {sellableVariants(selectedProduct).map((variant) => (
           <SelectionCard
-            key={product.id}
-            label={product.name}
-            description={`${formatPrice(MEAT_PRICE_PER_KG)} per kg`}
-            onClick={() => selectProduct(product.id)}
+            key={variant.id}
+            label={variant.label}
+            description={variantDescription(variant)}
+            onClick={() => selectVariant(variant.id)}
           />
         ))}
       </StepLayout>
     )
   }
 
-  if (step === 'quantity') {
-    const quantityTitle =
-      category === 'meat'
-        ? (selectedProduct?.name ?? 'Meat')
-        : SAUSAGE_LABEL
-    const quantityLabel =
-      category === 'meat'
-        ? 'How many kilograms?'
-        : 'How many packs?'
+  if (step === 'quantity' && selectedProduct && selectedVariant) {
+    const options = quantityOptionsFor(selectedVariant.unit).filter(
+      (value) => value <= quantityLimit,
+    )
     const selectedLineTotal =
-      quantity !== null && category
-        ? quantity * unitPriceFor(category)
-        : null
+      quantity !== null ? quantity * selectedVariant.price : null
 
     return (
       <StepLayout
-        title={quantityTitle}
-        subtitle={quantityLabel}
+        title={selectedProduct.name}
+        subtitle={`${selectedVariant.label} · ${formatPrice(selectedVariant.price)} per ${selectedVariant.unit}`}
         progress={CHECKOUT_PROGRESS.quantity}
         actions={
           <>
-            <Button
-              variant="secondary"
-              onClick={() => navigate(category === 'meat' ? 'product' : 'category')}
-            >
+            <Button variant="secondary" onClick={backFromQuantity}>
               Back
             </Button>
             <Button onClick={addToCart} disabled={!canAddToCart}>
@@ -381,29 +542,42 @@ export function OrderFlow({
           </>
         }
       >
-        <div className={styles.quantityGrid} role="group" aria-label={quantityLabel}>
-          {(category === 'meat' ? MEAT_QUANTITY_OPTIONS : SAUSAGE_QUANTITY_OPTIONS).map(
-            (value) => (
-            <button
-              key={value}
-              type="button"
-              className={[
-                styles.quantityButton,
-                quantity === value ? styles.quantityButtonSelected : '',
-              ]
-                .filter(Boolean)
-                .join(' ')}
-              onClick={() => setQuantity(value)}
-              aria-pressed={quantity === value}
-            >
-              {value}
-              <span className={styles.quantityUnit}>
-                {category === 'meat' ? 'kg' : value === 1 ? 'pack' : 'packs'}
-              </span>
-            </button>
-          ))}
-        </div>
-        {cart.length > 0 ? (
+        {options.length === 0 ? (
+          <p className={styles.emptyState}>This one just sold out.</p>
+        ) : (
+          <div
+            className={styles.quantityGrid}
+            role="group"
+            aria-label={selectedVariant.unit === 'kg' ? 'How many kilograms?' : 'How many boxes?'}
+          >
+            {options.map((value) => (
+              <button
+                key={value}
+                type="button"
+                className={[
+                  styles.quantityButton,
+                  quantity === value ? styles.quantityButtonSelected : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+                onClick={() => setQuantity(value)}
+                aria-pressed={quantity === value}
+              >
+                {value}
+                <span className={styles.quantityUnit}>
+                  {selectedVariant.unit === 'kg' ? 'kg' : value === 1 ? 'box' : 'boxes'}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+        {selectedVariant.trackStock &&
+        selectedVariant.stockQuantity <= MAX_LINE_QUANTITY ? (
+          <p className={styles.hint}>
+            {formatQuantity(selectedVariant.stockQuantity, selectedVariant.unit)} left in
+            stock.
+          </p>
+        ) : cart.length > 0 ? (
           <p className={styles.hint}>
             {cart.length} {cart.length === 1 ? 'item' : 'items'} already in your cart.
             This line will be combined if you add the same product again.
@@ -440,32 +614,29 @@ export function OrderFlow({
               {cart.map((item) => (
                 <li key={item.id} className={styles.cartItem}>
                   <div className={styles.cartItemInfo}>
-                    <span className={styles.cartItemName}>
-                      {item.category === 'meat' ? item.productName : SAUSAGE_LABEL}
-                    </span>
+                    <span className={styles.cartItemName}>{item.productName}</span>
                     <span className={styles.cartItemPrice}>
-                      {formatPrice(item.unitPrice)} / {item.unit}
+                      {item.variantLabel} · {formatPrice(item.unitPrice)} / {item.unit}
                     </span>
                   </div>
                   <div className={styles.qtyControls}>
                     <button
                       type="button"
                       className={styles.qtyButton}
-                      onClick={() => changeCartQuantity(item.id, item.unit === 'kg' ? -0.5 : -1)}
-                      aria-label={`Decrease ${item.category === 'meat' ? item.productName : SAUSAGE_LABEL}`}
+                      onClick={() => changeCartQuantity(item.id, -quantityStepFor(item.unit))}
+                      aria-label={`Decrease ${item.productName}`}
                     >
                       −
                     </button>
                     <span className={styles.qtyValue}>
-                      {item.quantity} {item.unit}
-                      {item.unit === 'pack' && item.quantity !== 1 ? 's' : ''}
+                      {formatQuantity(item.quantity, item.unit)}
                     </span>
                     <button
                       type="button"
                       className={styles.qtyButton}
-                      onClick={() => changeCartQuantity(item.id, item.unit === 'kg' ? 0.5 : 1)}
-                      aria-label={`Increase ${item.category === 'meat' ? item.productName : SAUSAGE_LABEL}`}
-                      disabled={item.quantity >= MAX_LINE_QUANTITY}
+                      onClick={() => changeCartQuantity(item.id, quantityStepFor(item.unit))}
+                      aria-label={`Increase ${item.productName}`}
+                      disabled={item.quantity >= maxQuantityFor(item)}
                     >
                       +
                     </button>
@@ -603,58 +774,71 @@ export function OrderFlow({
     )
   }
 
+  if (step === 'confirmation') {
+    return (
+      <StepLayout
+        title="Order received"
+        subtitle={
+          orderNumber
+            ? `Keep this number handy: ${orderNumber}. We’ll prepare your order for delivery.`
+            : 'We’ll prepare your order for delivery.'
+        }
+        actions={<Button onClick={orderAgain}>Order again</Button>}
+      >
+        <div className={styles.summaryCard}>
+          {orderNumber ? (
+            <>
+              <p className={styles.summaryLabel}>Order number</p>
+              <p className={styles.summaryValue}>{orderNumber}</p>
+            </>
+          ) : null}
+          <p className={styles.summaryLabel}>Deliver to</p>
+          <p className={styles.summaryValue}>{delivery.name}</p>
+          <p className={styles.summaryMuted}>{delivery.phone}</p>
+          <p className={styles.summaryMuted}>{delivery.address}</p>
+          {delivery.instructions.trim() ? (
+            <>
+              <p className={styles.summaryLabel}>Notes</p>
+              <p className={styles.summaryMuted}>{delivery.instructions}</p>
+            </>
+          ) : null}
+          <p className={styles.summaryLabel}>Items</p>
+          <ul className={styles.summaryList}>
+            {cart.map((item) => (
+              <li key={item.id}>
+                <span>{formatCartItem(item)}</span>
+                <span>{formatPrice(lineTotal(item))}</span>
+              </li>
+            ))}
+          </ul>
+          <OrderTotals items={cart} variant="inline" />
+          <p className={styles.nextStep}>
+            No payment is taken here. We’ll confirm the order and arrange delivery
+            by phone.
+          </p>
+          {user ? (
+            <p className={styles.nextStep}>
+              <Link to="/orders">Track this order</Link> in your account.
+            </p>
+          ) : (
+            <p className={styles.nextStep}>
+              Sign in next time to track orders from this device.{' '}
+              <Link to="/login">Get a sign-in link</Link>
+            </p>
+          )}
+        </div>
+      </StepLayout>
+    )
+  }
+
+  // A selection went stale (e.g. the catalog reloaded without that product).
   return (
     <StepLayout
-      title="Order received"
-      subtitle={
-        orderNumber
-          ? `Keep this number handy: ${orderNumber}. We’ll prepare your order for delivery.`
-          : 'We’ll prepare your order for delivery.'
-      }
-      actions={<Button onClick={orderAgain}>Order again</Button>}
+      title="Let’s start again"
+      subtitle="That selection is no longer available."
+      actions={<Button onClick={() => navigate('category', resetSelection)}>Browse the menu</Button>}
     >
-      <div className={styles.summaryCard}>
-        {orderNumber ? (
-          <>
-            <p className={styles.summaryLabel}>Order number</p>
-            <p className={styles.summaryValue}>{orderNumber}</p>
-          </>
-        ) : null}
-        <p className={styles.summaryLabel}>Deliver to</p>
-        <p className={styles.summaryValue}>{delivery.name}</p>
-        <p className={styles.summaryMuted}>{delivery.phone}</p>
-        <p className={styles.summaryMuted}>{delivery.address}</p>
-        {delivery.instructions.trim() ? (
-          <>
-            <p className={styles.summaryLabel}>Notes</p>
-            <p className={styles.summaryMuted}>{delivery.instructions}</p>
-          </>
-        ) : null}
-        <p className={styles.summaryLabel}>Items</p>
-        <ul className={styles.summaryList}>
-          {cart.map((item) => (
-            <li key={item.id}>
-              <span>{formatCartItem(item)}</span>
-              <span>{formatPrice(lineTotal(item))}</span>
-            </li>
-          ))}
-        </ul>
-        <OrderTotals items={cart} variant="inline" />
-        <p className={styles.nextStep}>
-          No payment is taken here. We’ll confirm the order and arrange delivery
-          by phone.
-        </p>
-        {user ? (
-          <p className={styles.nextStep}>
-            <Link to="/orders">Track this order</Link> in your account.
-          </p>
-        ) : (
-          <p className={styles.nextStep}>
-            Sign in next time to track orders from this device.{' '}
-            <Link to="/login">Get a sign-in link</Link>
-          </p>
-        )}
-      </div>
+      <p className={styles.emptyState}>Pick a product to continue.</p>
     </StepLayout>
   )
 }
