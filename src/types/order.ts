@@ -28,6 +28,8 @@ export type CartItem = {
 export type DeliveryDetails = {
   name: string
   phone: string
+  /** Optional, and only asked of guests: accounts already have one. */
+  email: string
   address: string
   instructions: string
 }
@@ -67,6 +69,8 @@ export type Order = {
   paymentMethod: PaymentMethod
   customerName: string
   phone: string
+  /** Where status emails go. Null when the customer asked for none. */
+  contactEmail: string | null
   address: string
   instructions: string
   subtotal: number
@@ -77,4 +81,14 @@ export type Order = {
   createdAt: string
   updatedAt: string
   items: OrderLine[]
+}
+
+/** One attempt at a status email. `sentAt` is null while it is still failing. */
+export type OrderEmail = {
+  id: string
+  status: OrderStatus
+  recipient: string
+  sentAt: string | null
+  error: string | null
+  createdAt: string
 }

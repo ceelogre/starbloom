@@ -1,0 +1,10 @@
+# Supabase CLI config. Migrations in this repo are still run by hand in the SQL
+# editor (see docs/supabase.md); the CLI is here to deploy Edge Functions.
+# Link a project first: supabase link --project-ref <ref>
+
+project_id = "starbloom"
+
+# Postgres calls this function through pg_net, which carries no user JWT. The
+# shared x-starbloom-signature header is what authorises the call instead.
+[functions.order-status-email]
+verify_jwt = false
