@@ -1,0 +1,115 @@
+.footer {
+  margin-top: auto;
+  padding: var(--space-12) var(--space-6) var(--space-8);
+  background-color: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+}
+
+.inner {
+  display: grid;
+  gap: var(--space-10);
+  max-width: var(--container-lg);
+  margin: 0 auto;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-display);
+  font-size: var(--font-size-lg);
+  font-weight: var(--display-weight);
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.brand:hover {
+  color: var(--color-primary-strong);
+}
+
+.brandMark {
+  flex: none;
+  height: 1.25rem;
+  aspect-ratio: 268 / 180;
+  background-color: currentColor;
+  -webkit-mask: url('../../assets/starbloom-mark.png') center / contain no-repeat;
+  mask: url('../../assets/starbloom-mark.png') center / contain no-repeat;
+}
+
+.tagline {
+  max-width: 22rem;
+  margin-top: var(--space-3);
+  line-height: var(--line-height-relaxed);
+}
+
+.nav,
+.contact {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.navLabel {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--color-accent-strong);
+  margin-bottom: var(--space-1);
+}
+
+.navButton,
+.navLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.25rem;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: var(--color-text);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.navButton:hover,
+.navLink:hover {
+  color: var(--color-primary-strong);
+}
+
+.legalRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  max-width: var(--container-lg);
+  margin: var(--space-10) auto 0;
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--color-border);
+  font-size: var(--font-size-sm);
+}
+
+.staff {
+  color: var(--color-text-subtle);
+  text-decoration: none;
+}
+
+.staff:hover {
+  color: var(--color-text);
+}
+
+@media (min-width: 48rem) {
+  .inner {
+    grid-template-columns: 1.4fr 1fr 1fr;
+    gap: var(--space-12);
+  }
+}
+
+@media print {
+  .footer {
+    display: none;
+  }
+}

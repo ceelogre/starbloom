@@ -15,6 +15,7 @@
   --space-10: 2.5rem;
   --space-12: 3rem;
   --space-16: 4rem;
+  --space-20: 5rem;
 
   --font-size-2xs: 0.6875rem;
   --font-size-xs: 0.75rem;
@@ -24,6 +25,7 @@
   --font-size-xl: 1.25rem;
   --font-size-2xl: 1.5rem;
   --font-size-3xl: clamp(1.75rem, 4vw, 2.25rem);
+  --font-size-4xl: clamp(2.25rem, 6vw, 3.75rem);
 
   --font-weight-regular: 400;
   --font-weight-medium: 500;
