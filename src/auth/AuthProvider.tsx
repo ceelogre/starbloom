@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
+import { isOrdersPath, rememberAuthNext } from '../lib/auth-redirect'
+import { claimGuestOrders } from '../lib/orders'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import { AuthContext } from './auth-context'
 
@@ -41,6 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const profile = data as ProfileRow | null
+    await claimGuestOrders()
     setSession(nextSession)
     setUser(nextUser)
     setIsStaff(profile?.role === 'staff')
@@ -94,14 +97,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const signInWithMagicLink = useCallback(async (email: string) => {
+  const signInWithMagicLink = useCallback(async (email: string, next = '/orders') => {
     if (!isSupabaseConfigured()) {
       throw new Error(
         'Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env.',
       )
     }
 
-    const redirectTo = `${window.location.origin}/auth/callback`
+    const safeNext = isOrdersPath(next) ? next : '/orders'
+    rememberAuthNext(safeNext)
+    const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(safeNext)}`
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: { emailRedirectTo: redirectTo },

@@ -1,15 +1,27 @@
-import { Outlet } from 'react-router'
-import styles from '../../App.module.css'
-import { Header } from '../../components/Header/Header'
-import adminStyles from '../admin/AdminShell.module.css'
+import { ClipboardList, Store } from 'lucide-react'
+import { DashboardShell } from '../../components/DashboardShell/DashboardShell'
 
 export function CustomerShell() {
   return (
-    <div className={styles.layout}>
-      <Header variant="account" />
-      <main className={adminStyles.main}>
-        <Outlet />
-      </main>
-    </div>
+    <DashboardShell
+      brandTo="/"
+      navLabel="Account"
+      items={[
+        {
+          to: '/',
+          label: 'Shop',
+          icon: Store,
+          isActive: (pathname) => pathname === '/',
+        },
+        {
+          to: '/orders',
+          label: 'Your orders',
+          icon: ClipboardList,
+          isActive: (pathname) =>
+            pathname === '/orders' || pathname.startsWith('/orders/'),
+        },
+      ]}
+      signOutTo="/"
+    />
   )
 }

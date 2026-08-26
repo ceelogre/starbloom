@@ -19,10 +19,13 @@ export const PAYMENT_METHODS: (PaymentOption & { id: PaymentMethod })[] = [
   },
 ]
 
+/** Hide the payment step while there is only one live method. */
+export const SKIP_PAYMENT_STEP = PAYMENT_METHODS.length === 1
+
 /**
- * Advertised in checkout so customers know what is on the way, but the database
- * has no value for these and they cannot be selected. Going live means adding
- * the enum value in Postgres and moving the entry into `PAYMENT_METHODS`.
+ * Kept here so going live is moving the entry into `PAYMENT_METHODS` and adding
+ * the enum value in Postgres. Not shown in checkout — unfinished options make
+ * the shop look incomplete to first-time visitors.
  */
 export const UPCOMING_PAYMENT_METHODS: PaymentOption[] = [
   {

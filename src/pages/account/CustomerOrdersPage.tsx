@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { useAuth } from '../../auth/useAuth'
+import { Button } from '../../components/Button/Button'
 import { formatPrice } from '../../data/products'
 import { fetchMyOrders } from '../../lib/orders'
 import { formatOrderTime, ORDER_STATUS_LABELS } from '../../lib/order-status'
@@ -10,6 +11,7 @@ import styles from '../admin/AdminInboxPage.module.css'
 
 export function CustomerOrdersPage() {
   const { isStaff } = useAuth()
+  const navigate = useNavigate()
   const [orders, setOrders] = useState<Order[]>([])
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -63,9 +65,12 @@ export function CustomerOrdersPage() {
       {loading ? <p className={styles.muted}>Loading…</p> : null}
 
       {!loading && orders.length === 0 ? (
-        <p className={styles.muted}>
-          No orders on this account yet. Place an order while signed in to track it here.
-        </p>
+        <div className={styles.empty}>
+          <p className={styles.muted}>No orders on this account yet.</p>
+          <Button onClick={() => navigate('/', { state: { start: 'category' } })}>
+            Start ordering
+          </Button>
+        </div>
       ) : (
         <ul className={styles.list}>
           {orders.map((order) => (

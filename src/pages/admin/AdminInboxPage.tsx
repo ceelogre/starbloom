@@ -1,13 +1,23 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link } from 'react-router'
+import { Link, useSearchParams } from 'react-router'
 import { formatPrice } from '../../data/products'
+import { pageTitle } from '../../data/brand'
+import { rememberAdminInboxSearch } from '../../lib/admin-inbox'
 import { fetchOrders } from '../../lib/orders'
 import { formatOrderTime, ORDER_STATUS_LABELS } from '../../lib/order-status'
 import { supabase } from '../../lib/supabase'
 import type { Order, OrderStatus } from '../../types/order'
 import styles from './AdminInboxPage.module.css'
 
-const TITLE = 'Starbloom — Orders'
+const STATUS_KEYS = Object.keys(ORDER_STATUS_LABELS) as OrderStatus[]
+
+function parseStatus(value: string | null): OrderStatus | 'all' {
+  if (value && STATUS_KEYS.includes(value as OrderStatus)) {
+    return value as OrderStatus
+  }
+
+  return 'all'
+}
 
 function playBeep() {
   try {
@@ -32,11 +42,12 @@ function playBeep() {
 }
 
 export function AdminInboxPage() {
+  const [params, setParams] = useSearchParams()
+  const status = parseStatus(params.get('status'))
+  const phone = params.get('phone') ?? ''
+  const fromDate = params.get('from') ?? ''
+  const toDate = params.get('to') ?? ''
   const [orders, setOrders] = useState<Order[]>([])
-  const [status, setStatus] = useState<OrderStatus | 'all'>('all')
-  const [phone, setPhone] = useState('')
-  const [fromDate, setFromDate] = useState('')
-  const [toDate, setToDate] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [unseen, setUnseen] = useState(0)
@@ -52,6 +63,10 @@ export function AdminInboxPage() {
       setLoading(false)
     }
   }, [status, phone, fromDate, toDate])
+
+  useEffect(() => {
+    rememberAdminInboxSearch(params.toString() ? `?${params.toString()}` : '')
+  }, [params])
 
   useEffect(() => {
     void load()
@@ -90,9 +105,9 @@ export function AdminInboxPage() {
   }, [load])
 
   useEffect(() => {
-    document.title = unseen > 0 ? `(${unseen}) ${TITLE}` : TITLE
+    document.title = unseen > 0 ? `(${unseen}) ${pageTitle('Orders')}` : pageTitle('Orders')
     return () => {
-      document.title = 'Starbloom'
+      document.title = pageTitle()
     }
   }, [unseen])
 
@@ -102,6 +117,18 @@ export function AdminInboxPage() {
     }
     void Notification.requestPermission()
   }, [])
+
+  function patchFilters(updates: Record<string, string>) {
+    const next = new URLSearchParams(params)
+    for (const [key, value] of Object.entries(updates)) {
+      if (value) {
+        next.set(key, value)
+      } else {
+        next.delete(key)
+      }
+    }
+    setParams(next, { replace: true })
+  }
 
   return (
     <section className={styles.page}>
@@ -129,10 +156,14 @@ export function AdminInboxPage() {
           <span>Status</span>
           <select
             value={status}
-            onChange={(event) => setStatus(event.target.value as OrderStatus | 'all')}
+            onChange={(event) =>
+              patchFilters({
+                status: event.target.value === 'all' ? '' : event.target.value,
+              })
+            }
           >
             <option value="all">All</option>
-            {(Object.keys(ORDER_STATUS_LABELS) as OrderStatus[]).map((key) => (
+            {STATUS_KEYS.map((key) => (
               <option key={key} value={key}>
                 {ORDER_STATUS_LABELS[key]}
               </option>
@@ -144,17 +175,25 @@ export function AdminInboxPage() {
           <input
             type="search"
             value={phone}
-            onChange={(event) => setPhone(event.target.value)}
+            onChange={(event) => patchFilters({ phone: event.target.value })}
             placeholder="Search phone"
           />
         </label>
         <label className={styles.filter}>
           <span>From</span>
-          <input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} />
+          <input
+            type="date"
+            value={fromDate}
+            onChange={(event) => patchFilters({ from: event.target.value })}
+          />
         </label>
         <label className={styles.filter}>
           <span>To</span>
-          <input type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} />
+          <input
+            type="date"
+            value={toDate}
+            onChange={(event) => patchFilters({ to: event.target.value })}
+          />
         </label>
       </form>
 

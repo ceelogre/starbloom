@@ -46,15 +46,13 @@
   /* Body text stays on the system sans: it costs nothing to load and reads as
    * native. Only the display face is self-hosted. */
   --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-  /* Fallbacks are ordered to keep an old-style serif on screen during the swap;
-   * without Charter and Liberation Serif this lands on DejaVu, which is far too
-   * wide and modern for the look the theme is built around. */
-  --font-display: 'Fraunces Variable', 'Iowan Old Style', Charter, 'Bitstream Charter',
-    'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, 'Liberation Serif', serif;
+  /* Figtree matches the bold geometric sans on the kraft pack sticker. */
+  --font-display: 'Figtree Variable', 'Figtree', system-ui, -apple-system, 'Segoe UI',
+    sans-serif;
   --font-mono: ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace;
 
-  --display-weight: var(--font-weight-bold);
-  --display-letter-spacing: var(--letter-spacing-normal);
+  --display-weight: var(--font-weight-black);
+  --display-letter-spacing: var(--letter-spacing-tight);
 
   --radius-xs: 6px;
   --radius-sm: 10px;

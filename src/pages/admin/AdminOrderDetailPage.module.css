@@ -21,6 +21,28 @@
   color: var(--color-text-muted);
 }
 
+.crumb {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.crumb a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.crumb a:hover {
+  color: var(--color-primary-strong);
+}
+
+.contactLink {
+  color: inherit;
+}
+
+.contactLink:hover {
+  color: var(--color-primary-strong);
+}
+
 .ticket {
   padding: var(--space-5) var(--space-6);
   border-radius: var(--radius-md);

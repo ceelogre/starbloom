@@ -8,7 +8,7 @@ export type AuthContextValue = {
   isStaff: boolean
   displayName: string
   signIn: (email: string, password: string) => Promise<void>
-  signInWithMagicLink: (email: string) => Promise<void>
+  signInWithMagicLink: (email: string, next?: string) => Promise<void>
   signOut: () => Promise<void>
 }
 

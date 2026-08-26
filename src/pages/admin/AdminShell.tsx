@@ -1,37 +1,44 @@
-import { NavLink, Outlet } from 'react-router'
-import styles from '../../App.module.css'
-import { Header } from '../../components/Header/Header'
-import adminStyles from './AdminShell.module.css'
-
-const TABS = [
-  { to: '/admin', label: 'Orders', end: true },
-  { to: '/admin/support', label: 'Support', end: false },
-  { to: '/admin/inventory', label: 'Inventory', end: false },
-]
+import { ClipboardList, MessageSquare, Package, Store } from 'lucide-react'
+import { DashboardShell } from '../../components/DashboardShell/DashboardShell'
 
 export function AdminShell() {
   return (
-    <div className={styles.layout}>
-      <Header variant="admin" />
-      <nav className={adminStyles.nav} aria-label="Admin sections">
-        {TABS.map((tab) => (
-          <NavLink
-            key={tab.to}
-            to={tab.to}
-            end={tab.end}
-            className={({ isActive }) =>
-              [adminStyles.tab, isActive ? adminStyles.tabActive : '']
-                .filter(Boolean)
-                .join(' ')
-            }
-          >
-            {tab.label}
-          </NavLink>
-        ))}
-      </nav>
-      <main className={adminStyles.main}>
-        <Outlet />
-      </main>
-    </div>
+    <DashboardShell
+      brandTo="/admin"
+      kicker="Staff"
+      navLabel="Staff sections"
+      items={[
+        {
+          to: '/admin',
+          label: 'Orders',
+          icon: ClipboardList,
+          isActive: (pathname) =>
+            pathname === '/admin' || pathname.startsWith('/admin/orders/'),
+        },
+        {
+          to: '/admin/support',
+          label: 'Support',
+          icon: MessageSquare,
+          isActive: (pathname) =>
+            pathname === '/admin/support' || pathname.startsWith('/admin/support/'),
+        },
+        {
+          to: '/admin/inventory',
+          label: 'Inventory',
+          icon: Package,
+          isActive: (pathname) =>
+            pathname === '/admin/inventory' || pathname.startsWith('/admin/inventory/'),
+        },
+      ]}
+      extras={[
+        {
+          to: '/',
+          label: 'View shop',
+          icon: Store,
+          isActive: () => false,
+        },
+      ]}
+      signOutTo="/admin/login"
+    />
   )
 }

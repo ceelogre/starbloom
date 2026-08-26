@@ -1,0 +1,321 @@
+.shell {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto 1fr;
+  min-height: 100svh;
+}
+
+.topBar {
+  grid-row: 1;
+  position: sticky;
+  top: 0;
+  z-index: calc(var(--z-modal) + 2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: 4rem;
+  padding: var(--space-3) var(--space-4);
+  background-color: color-mix(in srgb, var(--color-surface) 85%, transparent);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.topBarStart {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.menuButton,
+.profileButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 2.5rem;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-surface);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.menuButton {
+  width: 2.5rem;
+  padding: 0;
+}
+
+.menuButton:hover,
+.profileButton:hover {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary-subtle);
+}
+
+.actionIcon {
+  width: 1rem;
+  height: 1rem;
+  flex: none;
+}
+
+.profile {
+  position: relative;
+  flex: none;
+}
+
+.profileName {
+  max-width: 9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profileChevron {
+  width: 0.875rem;
+  height: 0.875rem;
+  flex: none;
+  color: var(--color-text-muted);
+}
+
+.profileMenu {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  right: 0;
+  z-index: var(--z-popover);
+  display: flex;
+  flex-direction: column;
+  min-width: 14rem;
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface-raised);
+  box-shadow: var(--shadow-md);
+}
+
+.profileEmail {
+  padding: var(--space-2) var(--space-3);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profileItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--tap-target-min);
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  text-decoration: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.profileItem:hover {
+  background-color: var(--color-surface-sunken);
+}
+
+.backdrop {
+  position: fixed;
+  inset: 4rem 0 0;
+  z-index: var(--z-modal);
+  border: none;
+  padding: 0;
+  background-color: rgb(18 22 16 / 0.45);
+  cursor: pointer;
+}
+
+.sidebar {
+  position: fixed;
+  top: 4rem;
+  left: 0;
+  bottom: 0;
+  z-index: calc(var(--z-modal) + 1);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  width: min(18rem, 88vw);
+  padding: var(--space-5) var(--space-4);
+  background-color: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+  box-shadow: var(--shadow-lg);
+  transform: translateX(-100%);
+  visibility: hidden;
+  pointer-events: none;
+  transition: transform var(--duration-slow) var(--ease-out),
+    visibility var(--duration-slow) var(--ease-out);
+}
+
+.sidebarOpen {
+  transform: none;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  font-family: var(--font-display);
+  font-size: var(--font-size-lg);
+  font-weight: var(--display-weight);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.brand:hover {
+  color: var(--color-primary-strong);
+}
+
+.brandMark {
+  flex: none;
+  width: 1.75rem;
+  height: 1.35rem;
+  color: var(--color-primary-strong);
+}
+
+.kicker {
+  display: block;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--color-accent-strong);
+}
+
+.brandSidebar {
+  display: none;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  flex: 1;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--tap-target-min);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
+  text-decoration: none;
+}
+
+.tab:hover {
+  color: var(--color-text);
+  background-color: var(--color-surface-sunken);
+}
+
+.tabActive,
+.tabActive:hover {
+  border-color: var(--color-primary-border);
+  background-color: var(--color-primary-subtle);
+  color: var(--color-text);
+}
+
+.tabIcon {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex: none;
+}
+
+.footer {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
+.main {
+  grid-row: 2;
+  min-width: 0;
+  width: 100%;
+  max-width: var(--container-lg);
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-6) var(--space-12);
+}
+
+@media (min-width: 48rem) {
+  .shell {
+    grid-template-columns: 15.5rem 1fr;
+    grid-template-rows: auto 1fr;
+  }
+
+  .menuButton,
+  .brandTop,
+  .topBarStart,
+  .backdrop {
+    display: none;
+  }
+
+  .sidebar,
+  .sidebarOpen {
+    grid-column: 1;
+    grid-row: 1 / -1;
+    position: sticky;
+    top: 0;
+    z-index: auto;
+    width: auto;
+    height: auto;
+    min-height: 100svh;
+    transform: none;
+    visibility: visible;
+    pointer-events: auto;
+    box-shadow: none;
+    transition: none;
+  }
+
+  .brandSidebar {
+    display: inline-flex;
+  }
+
+  .topBar {
+    grid-column: 2;
+    grid-row: 1;
+    justify-content: flex-end;
+  }
+
+  .main {
+    grid-column: 2;
+    grid-row: 2;
+  }
+}
+
+@media print {
+  .topBar,
+  .sidebar,
+  .backdrop {
+    display: none;
+  }
+
+  .main {
+    max-width: none;
+    padding: 0;
+  }
+}

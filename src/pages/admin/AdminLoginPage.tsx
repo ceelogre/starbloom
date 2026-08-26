@@ -1,10 +1,11 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Navigate, useLocation } from 'react-router'
 import { useAuth } from '../../auth/useAuth'
 import { Header } from '../../components/Header/Header'
 import { Button } from '../../components/Button/Button'
 import { StepLayout } from '../../components/StepLayout/StepLayout'
-import styles from './AdminLoginPage.module.css'
+import { pageTitle } from '../../data/brand'
+import styles from '../../styles/form.module.css'
 
 export function AdminLoginPage() {
   const { session, ready, isStaff, signIn, signOut } = useAuth()
@@ -19,6 +20,13 @@ export function AdminLoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+
+  useEffect(() => {
+    document.title = pageTitle('Staff login')
+    return () => {
+      document.title = pageTitle()
+    }
+  }, [])
 
   if (ready && session && isStaff) {
     return <Navigate to={from} replace />

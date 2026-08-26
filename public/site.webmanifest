@@ -1,0 +1,21 @@
+{
+  "name": "Starbloom",
+  "short_name": "Starbloom",
+  "description": "Order sausage, pork ribs, and ham for delivery in Kigali. Pay on delivery. VAT included.",
+  "start_url": "/",
+  "display": "browser",
+  "background_color": "#f6efe2",
+  "theme_color": "#1f6b38",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

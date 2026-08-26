@@ -28,21 +28,22 @@ const WRAPPER_STYLE = [
   'font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
   'font-size: 15px',
   'line-height: 1.5',
-  'color: #2c2118',
+  'color: #1c2418',
   'max-width: 34rem',
   'margin: 0 auto',
   'padding: 24px',
 ].join(';')
 
-const MUTED_COLOR = '#6f6259'
+const MUTED_COLOR = '#5a6352'
 const MUTED_STYLE = `color: ${MUTED_COLOR}; margin: 4px 0`
+const BRAND_STYLE = 'font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:#1f6b38;margin:4px 0;font-weight:700'
 
 function layout(parts: { heading: string; lead: string; body: string; footer: string }) {
   return `<!doctype html>
 <html>
-  <body style="margin:0;background:#faf7f2">
+  <body style="margin:0;background:#f6efe2">
     <div style="${WRAPPER_STYLE}">
-      <p style="font-size:13px;letter-spacing:0.08em;text-transform:uppercase;${MUTED_STYLE}">Starbloom</p>
+      <p style="${BRAND_STYLE}">Starbloom</p>
       <h1 style="font-size:22px;margin:8px 0 12px">${parts.heading}</h1>
       <p style="margin:0 0 20px">${parts.lead}</p>
       ${parts.body}

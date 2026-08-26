@@ -1,25 +1,32 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router'
 import { useAuth } from '../../auth/useAuth'
 import { Header } from '../../components/Header/Header'
 import { Button } from '../../components/Button/Button'
 import { StepLayout } from '../../components/StepLayout/StepLayout'
-import styles from '../admin/AdminLoginPage.module.css'
+import { isOrdersPath, rememberAuthNext } from '../../lib/auth-redirect'
+import { pageTitle } from '../../data/brand'
+import styles from '../../styles/form.module.css'
 
 export function CustomerLoginPage() {
   const { session, ready, signInWithMagicLink } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const from =
-    (location.state as { from?: string } | null)?.from &&
-    (location.state as { from: string }).from.startsWith('/orders')
-      ? (location.state as { from: string }).from
-      : '/orders'
+  const fromCandidate = (location.state as { from?: string } | null)?.from
+  const from = fromCandidate && isOrdersPath(fromCandidate) ? fromCandidate : '/orders'
 
   const [email, setEmail] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [sent, setSent] = useState(false)
+
+  useEffect(() => {
+    document.title = pageTitle('Track your order')
+    rememberAuthNext(from)
+    return () => {
+      document.title = pageTitle()
+    }
+  }, [from])
 
   if (ready && session) {
     return <Navigate to={from} replace />
@@ -31,7 +38,7 @@ export function CustomerLoginPage() {
     setSubmitting(true)
 
     try {
-      await signInWithMagicLink(email.trim())
+      await signInWithMagicLink(email.trim(), from)
       setSent(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not send a sign-in link.')
@@ -52,7 +59,10 @@ export function CustomerLoginPage() {
         }
         actions={
           sent ? (
-            <Button variant="secondary" onClick={() => navigate('/')}>
+            <Button
+              variant="secondary"
+              onClick={() => navigate('/', { state: { start: 'category' } })}
+            >
               Back to shop
             </Button>
           ) : (
