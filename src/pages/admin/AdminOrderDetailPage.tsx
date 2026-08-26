@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router'
 import { Button } from '../../components/Button/Button'
 import { OrderTotals } from '../../components/OrderTotals/OrderTotals'
 import { formatPrice } from '../../data/products'
+import { adminInboxHref } from '../../lib/admin-inbox'
 import {
   cancelOrder,
   fetchOrder,
@@ -84,7 +85,7 @@ export function AdminOrderDetailPage() {
     return (
       <section className={styles.page}>
         <p className={styles.error}>{error}</p>
-        <Link to="/admin" className={styles.back}>
+        <Link to={adminInboxHref()} className={styles.back}>
           Back to inbox
         </Link>
       </section>
@@ -101,7 +102,12 @@ export function AdminOrderDetailPage() {
   return (
     <section className={styles.page}>
       <div className={styles.screenOnly}>
-        <Link to="/admin" className={styles.back}>
+        <p className={styles.crumb}>
+          <Link to={adminInboxHref()}>Orders</Link>
+          <span aria-hidden="true"> › </span>
+          {order.orderNumber}
+        </p>
+        <Link to={adminInboxHref()} className={styles.back}>
           Back to inbox
         </Link>
         <div className={styles.heading}>
@@ -118,8 +124,18 @@ export function AdminOrderDetailPage() {
 
         <h2 className={styles.sectionTitle}>Customer</h2>
         <p className={styles.value}>{order.customerName}</p>
-        <p className={styles.muted}>{order.phone}</p>
-        {order.contactEmail ? <p className={styles.muted}>{order.contactEmail}</p> : null}
+        <p className={styles.muted}>
+          <a className={styles.contactLink} href={`tel:${order.phone}`}>
+            {order.phone}
+          </a>
+        </p>
+        {order.contactEmail ? (
+          <p className={styles.muted}>
+            <a className={styles.contactLink} href={`mailto:${order.contactEmail}`}>
+              {order.contactEmail}
+            </a>
+          </p>
+        ) : null}
         <p className={styles.muted}>{order.address}</p>
         {order.instructions.trim() ? (
           <p className={styles.muted}>Notes: {order.instructions}</p>

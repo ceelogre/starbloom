@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { formatOrderTime } from '../../lib/order-status'
+import { pageTitle } from '../../data/brand'
 import { supabase } from '../../lib/supabase'
 import { fetchInquiries, INQUIRY_STATUS_LABELS, previewMessage } from '../../lib/support'
 import type { InquiryStatus, SupportInquiry } from '../../types/support'
 import styles from './AdminInboxPage.module.css'
-
-const TITLE = 'Starbloom — Support'
 
 function playBeep() {
   try {
@@ -87,9 +86,9 @@ export function AdminSupportPage() {
   }, [load])
 
   useEffect(() => {
-    document.title = unseen > 0 ? `(${unseen}) ${TITLE}` : TITLE
+    document.title = unseen > 0 ? `(${unseen}) ${pageTitle('Support')}` : pageTitle('Support')
     return () => {
-      document.title = 'Starbloom'
+      document.title = pageTitle()
     }
   }, [unseen])
 

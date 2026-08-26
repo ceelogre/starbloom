@@ -1,5 +1,6 @@
 /*
- * Butcher Craft — burgundy on warm cream, brass accents, serif display type.
+ * Pack brand — forest green on kraft, sausage-red appetite, gold highlights.
+ * Matches the physical Starbloom box sticker, not the old burgundy butcher look.
  *
  * Naming contract:
  *   --color-primary        fill color for primary actions
@@ -7,9 +8,8 @@
  *   --color-primary-strong primary-derived color safe for text ON the page background
  *   --color-primary-subtle tinted background for selected/highlighted states
  *
- * The accent tokens follow the same contract. Every neutral carries a warm
- * (red/yellow) bias — nothing here is a pure grey, which is what keeps the
- * dark mode reading as aged wood and butcher paper rather than slate.
+ * The accent tokens follow the same contract. Neutrals stay kraft-warm
+ * (yellow/green bias) so dark mode reads as sealed wood, not slate.
  *
  * Border contract:
  *   --color-border        decorative dividers and card outlines
@@ -20,41 +20,42 @@
 [data-mode='light'] {
   color-scheme: light;
 
-  --color-bg: #fdfaf5;
-  --color-bg-subtle: #f5efe4;
-  --color-surface: #fffdf9;
+  --color-bg: #f6efe2;
+  --color-bg-subtle: #eee3d0;
+  --color-surface: #fffaf2;
   --color-surface-raised: #ffffff;
-  --color-surface-sunken: #f3ece0;
+  --color-surface-sunken: #e8dcc6;
 
-  --color-text: #2b2018;
-  --color-text-muted: #6b5a4c;
-  --color-text-subtle: #7d6c5c;
-  --color-text-inverse: #fdfaf5;
+  --color-text: #1c2418;
+  --color-text-muted: #5a6352;
+  --color-text-subtle: #6e7866;
+  --color-text-inverse: #f6efe2;
 
-  --color-border: #e7dbca;
-  --color-border-strong: #9c8e7c;
+  --color-border: #e0d2b8;
+  --color-border-strong: #8f846c;
 
-  --color-primary: #8c1d2b;
-  --color-primary-hover: #74161f;
-  --color-primary-active: #5e1119;
-  --color-primary-text: #fff6f2;
-  --color-primary-strong: #8c1d2b;
-  --color-primary-subtle: #f8e9e6;
+  --color-primary: #1f6b38;
+  --color-primary-hover: #18572d;
+  --color-primary-active: #134523;
+  --color-primary-text: #f4fff6;
+  --color-primary-strong: #1a5c30;
+  --color-primary-subtle: #e4f0e4;
   --color-primary-border: var(--color-primary);
 
-  --color-accent: #a07a1b;
-  --color-accent-text: #fffdf5;
-  --color-accent-strong: #78590f;
-  --color-accent-subtle: #f8f0d9;
+  /* Pack gold — eyebrows, kickers, highlights. */
+  --color-accent: #c9a227;
+  --color-accent-text: #1a1404;
+  --color-accent-strong: #8a6d10;
+  --color-accent-subtle: #f7efd4;
 
-  --color-success: #147a4b;
-  --color-success-subtle: #e4f5ec;
+  --color-success: #1f6b38;
+  --color-success-subtle: #e4f0e4;
   --color-warning: #9a6100;
   --color-warning-subtle: #fdf1dd;
-  --color-danger: #b3261e;
+  --color-danger: #c42a2a;
   --color-danger-subtle: #fceceb;
 
-  --shadow-color: 61 41 26;
+  --shadow-color: 61 48 26;
   --shadow-strength-low: 0.06;
   --shadow-strength-mid: 0.09;
   --shadow-strength-high: 0.13;
@@ -64,38 +65,34 @@
 [data-mode='dark'] {
   color-scheme: dark;
 
-  --color-bg: #14100d;
-  --color-bg-subtle: #1a1512;
-  --color-surface: #201a16;
-  --color-surface-raised: #2a231e;
-  --color-surface-sunken: #0f0c0a;
+  --color-bg: #121610;
+  --color-bg-subtle: #171c15;
+  --color-surface: #1c2319;
+  --color-surface-raised: #252c21;
+  --color-surface-sunken: #0d110c;
 
-  --color-text: #f0e6da;
-  --color-text-muted: #b8a897;
-  --color-text-subtle: #99887a;
-  --color-text-inverse: #14100d;
+  --color-text: #efe6d4;
+  --color-text-muted: #b3aa95;
+  --color-text-subtle: #93897a;
+  --color-text-inverse: #121610;
 
-  --color-border: #352b23;
-  --color-border-strong: #756a60;
+  --color-border: #32382c;
+  --color-border-strong: #6e7666;
 
-  /* Kept deliberately deep rather than lightened. Raising a burgundy's
-   * lightness for dark mode turns it pink and loses the brand; a dark fill with
-   * near-white text clears 7:1 and stays burgundy. Lightening happens only in
-   * --color-primary-strong, which has to sit on the background as text. */
-  --color-primary: #a32236;
-  --color-primary-hover: #ba2941;
-  --color-primary-active: #8c1b2c;
-  --color-primary-text: #fff4f1;
-  --color-primary-strong: #e29099;
-  --color-primary-subtle: #2b1619;
-  /* The fill is only 2.3:1 against the surface, so the button's shape is
-   * carried by this border instead of by lightening the fill into pink. */
-  --color-primary-border: #b6485a;
+  /* Deep forest fill with near-white text; lighten only --color-primary-strong
+   * so links on the page background stay green instead of mint. */
+  --color-primary: #247a40;
+  --color-primary-hover: #2d8f4c;
+  --color-primary-active: #1c6334;
+  --color-primary-text: #f4fff6;
+  --color-primary-strong: #8fd4a4;
+  --color-primary-subtle: #1a2b1c;
+  --color-primary-border: #4a9a62;
 
   --color-accent: #d4af4f;
-  --color-accent-text: #1a1204;
+  --color-accent-text: #1a1404;
   --color-accent-strong: #e6c477;
-  --color-accent-subtle: #2a2113;
+  --color-accent-subtle: #2a2413;
 
   --color-success: #6ec18d;
   --color-success-subtle: #14251a;
@@ -104,9 +101,7 @@
   --color-danger: #e97a72;
   --color-danger-subtle: #2c1512;
 
-  /* Drop shadows barely read against a dark background, so elevation leans on
-   * the surface ramp plus a hairline lit top edge instead. */
-  --shadow-color: 8 5 3;
+  --shadow-color: 5 8 4;
   --shadow-strength-low: 0.35;
   --shadow-strength-mid: 0.45;
   --shadow-strength-high: 0.58;

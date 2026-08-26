@@ -12,8 +12,8 @@ export const CATEGORY_LABELS: Record<Category, string> = {
 }
 
 export const CATEGORY_DESCRIPTIONS: Record<Category, string> = {
-  meat: 'Cuts prepared and weighed to order.',
-  sausage: 'Smoked and fresh, boxed or by the kilo.',
+  meat: 'Ribs and ham, prepared and weighed to order.',
+  sausage: 'Smoked and fresh, pork and beef, boxed or by the kilo.',
 }
 
 export const TAG_LABELS: Record<ProductTag, string> = {

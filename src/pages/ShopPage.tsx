@@ -1,18 +1,49 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router'
 import styles from '../App.module.css'
 import { Footer } from '../components/Footer/Footer'
 import { Header } from '../components/Header/Header'
 import { OrderFlow, type OrderStep, type StepRequest } from '../components/OrderFlow/OrderFlow'
+import { pageTitle } from '../data/brand'
+
+type ShopStart = 'category' | 'cart' | 'meat' | 'sausage'
+
+function startRequest(state: unknown): StepRequest | null {
+  const start = (state as { start?: ShopStart } | null)?.start
+  if (start === 'category' || start === 'cart') {
+    return { step: start }
+  }
+  if (start === 'meat' || start === 'sausage') {
+    return { step: 'product', category: start }
+  }
+  return null
+}
 
 export function ShopPage() {
+  const location = useLocation()
+  const navigate = useNavigate()
   const [cartCount, setCartCount] = useState(0)
   const [step, setStep] = useState<OrderStep>('home')
-  const [requestedStep, setRequestedStep] = useState<StepRequest | null>(null)
+  const [requestedStep, setRequestedStep] = useState<StepRequest | null>(() =>
+    startRequest(location.state),
+  )
   const [scrollTarget, setScrollTarget] = useState<string | null>(null)
 
   const handleRequestedStepHandled = useCallback(() => {
     setRequestedStep(null)
   }, [])
+
+  useEffect(() => {
+    document.title = pageTitle()
+  }, [])
+
+  useEffect(() => {
+    if (!startRequest(location.state)) {
+      return
+    }
+
+    navigate('.', { replace: true, state: {} })
+  }, [location.state, navigate])
 
   useEffect(() => {
     if (!scrollTarget || step !== 'home') {

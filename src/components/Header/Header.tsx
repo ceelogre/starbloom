@@ -1,6 +1,9 @@
-import { LogOut, ShoppingCart } from 'lucide-react'
-import { Link, useLocation, useNavigate } from 'react-router'
+import { useEffect, useRef, useState } from 'react'
+import { Menu, ShoppingCart, X } from 'lucide-react'
+import { Link, useLocation } from 'react-router'
 import { useAuth } from '../../auth/useAuth'
+import { BRAND_NAME } from '../../data/brand'
+import { BrandMark } from '../BrandMark/BrandMark'
 import { ThemeToggle } from '../ThemeToggle/ThemeToggle'
 import styles from './Header.module.css'
 
@@ -13,27 +16,46 @@ type ShopHeaderProps = {
 }
 
 type SimpleHeaderProps = {
-  variant: 'admin' | 'login' | 'account'
+  variant: 'login' | 'account'
 }
 
 type HeaderProps = ShopHeaderProps | SimpleHeaderProps
 
 function isShopHeader(props: HeaderProps): props is ShopHeaderProps {
-  return props.variant !== 'admin' && props.variant !== 'login' && props.variant !== 'account'
+  return props.variant !== 'login' && props.variant !== 'account'
 }
 
 export function Header(props: HeaderProps) {
-  const { session, isStaff, signOut } = useAuth()
+  const { session } = useAuth()
   const location = useLocation()
-  const navigate = useNavigate()
-  const staffHref = isStaff ? '/admin' : '/admin/login'
   const trackHref = session ? '/orders' : '/login'
   const shop = isShopHeader(props) ? props : null
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    setMenuOpen(false)
+  }, [location.pathname])
+
+  useEffect(() => {
+    if (!menuOpen) {
+      return
+    }
+
+    function onPointerDown(event: PointerEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false)
+      }
+    }
+
+    document.addEventListener('pointerdown', onPointerDown)
+    return () => document.removeEventListener('pointerdown', onPointerDown)
+  }, [menuOpen])
 
   const brand = (
     <>
-      <span className={styles.brandMark} aria-hidden="true" />
-      Starbloom
+      <BrandMark className={styles.brandMark} />
+      {BRAND_NAME}
     </>
   )
 
@@ -57,62 +79,50 @@ export function Header(props: HeaderProps) {
           {brand}
         </Link>
       )}
-      <div className={styles.actions}>
+      <div className={styles.actions} ref={menuRef}>
         <ThemeToggle />
-        {props.variant === 'admin' ? (
-          <button
-            type="button"
-            className={styles.cartButton}
-            onClick={() => {
-              void signOut().then(() => navigate('/admin/login'))
-            }}
-          >
-            <LogOut className={styles.actionIcon} aria-hidden="true" strokeWidth={2} />
-            Sign out
-          </button>
-        ) : null}
-        {props.variant === 'account' && session ? (
-          <>
-            {isStaff ? (
-              <Link to="/admin" className={styles.staffLink}>
-                Staff inbox
-              </Link>
-            ) : null}
-            <button
-              type="button"
-              className={styles.cartButton}
-              onClick={() => {
-                void signOut().then(() => navigate('/'))
-              }}
-            >
-              <LogOut className={styles.actionIcon} aria-hidden="true" strokeWidth={2} />
-              Sign out
-            </button>
-          </>
-        ) : null}
         {shop ? (
           <>
+            <nav
+              id="shop-nav"
+              className={menuOpen ? `${styles.nav} ${styles.navOpen}` : styles.nav}
+              aria-label="Shop"
+            >
+              <button
+                type="button"
+                className={styles.navLink}
+                onClick={() => {
+                  setMenuOpen(false)
+                  shop.onHowItWorksClick()
+                }}
+              >
+                How it works
+              </button>
+              <Link to="/contact" className={styles.navLink} onClick={() => setMenuOpen(false)}>
+                Contact
+              </Link>
+              <Link to={trackHref} className={styles.navLink} onClick={() => setMenuOpen(false)}>
+                Track order
+              </Link>
+            </nav>
             <button
               type="button"
-              className={styles.staffLink}
-              onClick={shop.onHowItWorksClick}
+              className={styles.menuButton}
+              aria-expanded={menuOpen}
+              aria-controls="shop-nav"
+              aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+              onClick={() => setMenuOpen((open) => !open)}
             >
-              How it works
+              {menuOpen ? (
+                <X className={styles.actionIcon} strokeWidth={2} />
+              ) : (
+                <Menu className={styles.actionIcon} strokeWidth={2} />
+              )}
             </button>
-            <Link to="/contact" className={styles.staffLink}>
-              Contact
-            </Link>
-            <Link to={trackHref} className={styles.staffLink}>
-              Track order
-            </Link>
-            <Link to={staffHref} className={styles.staffLink}>
-              Staff
-            </Link>
             <button
               type="button"
               className={styles.cartButton}
               onClick={shop.onCartClick}
-              disabled={shop.cartCount === 0}
               aria-label={`View cart with ${shop.cartCount} ${shop.cartCount === 1 ? 'item' : 'items'}`}
             >
               <ShoppingCart className={styles.actionIcon} aria-hidden="true" strokeWidth={2} />
@@ -122,11 +132,6 @@ export function Header(props: HeaderProps) {
               ) : null}
             </button>
           </>
-        ) : null}
-        {props.variant === 'account' && !session ? (
-          <Link to={staffHref} className={styles.staffLink}>
-            Staff
-          </Link>
         ) : null}
       </div>
     </header>

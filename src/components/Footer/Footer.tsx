@@ -1,5 +1,6 @@
 import { Link } from 'react-router'
-import { DELIVERY_PRICE, VAT_RATE, formatPrice } from '../../data/products'
+import { BRAND_NAME, CITY, INSTAGRAM_URL, TAGLINE, WHATSAPP_URL } from '../../data/brand'
+import { BrandMark } from '../BrandMark/BrandMark'
 import styles from './Footer.module.css'
 
 type FooterProps = {
@@ -29,11 +30,12 @@ export function Footer({
               onHomeClick()
             }}
           >
-            <span className={styles.brandMark} aria-hidden="true" />
-            Starbloom
+            <BrandMark className={styles.brandMark} />
+            {BRAND_NAME}
           </a>
           <p className={styles.tagline}>
-            Pork meat and sausage prepared to order, delivered across Kigali.
+            {TAGLINE}. Pork and beef sausage, ribs, and ham — prepared to order and
+            delivered across {CITY}.
           </p>
         </div>
         <nav className={styles.nav} aria-label="Shop">
@@ -50,19 +52,27 @@ export function Footer({
         </nav>
         <div className={styles.contact}>
           <p className={styles.navLabel}>Visit</p>
-          <p>Kigali, Rwanda</p>
-          <p>Delivery {formatPrice(DELIVERY_PRICE)}</p>
-          <p>Prices include {Math.round(VAT_RATE * 100)}% VAT</p>
+          <p>{CITY}, Rwanda</p>
           <button type="button" className={styles.navButton} onClick={onHowItWorksClick}>
             How it works
           </button>
           <Link to="/contact" className={styles.navLink}>
             Contact
           </Link>
+          {INSTAGRAM_URL ? (
+            <a className={styles.navLink} href={INSTAGRAM_URL} rel="noreferrer" target="_blank">
+              Instagram
+            </a>
+          ) : null}
+          {WHATSAPP_URL ? (
+            <a className={styles.navLink} href={WHATSAPP_URL} rel="noreferrer" target="_blank">
+              WhatsApp
+            </a>
+          ) : null}
         </div>
       </div>
       <div className={styles.legalRow}>
-        <p>© {new Date().getFullYear()} Starbloom. All rights reserved.</p>
+        <p>© {new Date().getFullYear()} {BRAND_NAME}. All rights reserved.</p>
         <Link to="/admin/login" className={styles.staff}>
           Staff sign in
         </Link>

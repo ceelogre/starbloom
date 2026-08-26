@@ -1,7 +1,5 @@
-/* Weight axis only (~36 KB latin). The optical-size and WONK axes are available
- * as '@fontsource-variable/fraunces/opsz.css' and '/full.css' at 66 KB and
- * 118 KB, which isn't worth it while the serif is headings-only. */
-@import '@fontsource-variable/fraunces';
+/* Weight axis only. Display face matches the pack wordmark; body stays system. */
+@import '@fontsource-variable/figtree';
 @import './styles/tokens.css';
 @import './styles/theme.css';
 @import './styles/transitions.css';

@@ -4,6 +4,7 @@ import { Link } from 'react-router'
 import { useAuth } from '../../auth/useAuth'
 import { HomeLanding } from '../HomeLanding/HomeLanding'
 import { Button } from '../Button/Button'
+import { CategoryVisual } from '../CategoryVisual/CategoryVisual'
 import { OrderTotals } from '../OrderTotals/OrderTotals'
 import { SelectionCard } from '../SelectionCard/SelectionCard'
 import { StepLayout } from '../StepLayout/StepLayout'
@@ -23,14 +24,22 @@ import {
   maxQuantityFor,
   mergeCartItem,
   adjustCartQuantity,
+  pruneCart,
   MAX_LINE_QUANTITY,
 } from '../../lib/cart'
+import {
+  clearConfirmation,
+  loadConfirmation,
+  loadStoredCart,
+  saveConfirmation,
+  saveStoredCart,
+} from '../../lib/checkout-storage'
 import { placeGuestOrder } from '../../lib/orders'
 import {
   DEFAULT_PAYMENT_METHOD,
   PAYMENT_METHODS,
   PAYMENT_METHOD_LABELS,
-  UPCOMING_PAYMENT_METHODS,
+  SKIP_PAYMENT_STEP,
 } from '../../lib/payment'
 import { cheapestPrice, isProductSoldOut, sellableVariants } from '../../types/catalog'
 import type { Product, ProductTag, ProductVariant } from '../../types/catalog'
@@ -75,14 +84,15 @@ function createCartItemId() {
 }
 
 /** Picking a variant and a quantity read as one "how much?" step. */
+const CHECKOUT_TOTAL = SKIP_PAYMENT_STEP ? 5 : 6
 const CHECKOUT_PROGRESS = {
-  category: { current: 1, total: 6 },
-  product: { current: 2, total: 6 },
-  variant: { current: 3, total: 6 },
-  quantity: { current: 3, total: 6 },
-  cart: { current: 4, total: 6 },
-  payment: { current: 5, total: 6 },
-  delivery: { current: 6, total: 6 },
+  category: { current: 1, total: CHECKOUT_TOTAL },
+  product: { current: 2, total: CHECKOUT_TOTAL },
+  variant: { current: 3, total: CHECKOUT_TOTAL },
+  quantity: { current: 3, total: CHECKOUT_TOTAL },
+  cart: { current: 4, total: CHECKOUT_TOTAL },
+  payment: { current: SKIP_PAYMENT_STEP ? 4 : 5, total: CHECKOUT_TOTAL },
+  delivery: { current: SKIP_PAYMENT_STEP ? 5 : 6, total: CHECKOUT_TOTAL },
 } as const
 
 function variantDescription(variant: ProductVariant) {
@@ -102,31 +112,54 @@ export function OrderFlow({
   requestedStep,
   onRequestedStepHandled,
 }: OrderFlowProps) {
-  const [step, setStep] = useState<OrderStep>('home')
+  const resumeSnapshot = requestedStep ? null : loadConfirmation()
+  const [step, setStep] = useState<OrderStep>(() => {
+    if (requestedStep?.step === 'payment' && SKIP_PAYMENT_STEP) {
+      return 'delivery'
+    }
+    if (requestedStep?.step) {
+      return requestedStep.step
+    }
+    return resumeSnapshot ? 'confirmation' : 'home'
+  })
   const [catalog, setCatalog] = useState<Product[]>([])
   const [catalogError, setCatalogError] = useState<string | null>(null)
   const [isLoadingCatalog, setIsLoadingCatalog] = useState(true)
-  const [category, setCategory] = useState<Category | null>(null)
+  const [category, setCategory] = useState<Category | null>(
+    () => requestedStep?.category ?? null,
+  )
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null)
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null)
   const [quantity, setQuantity] = useState<number | null>(null)
-  const [cart, setCart] = useState<CartItem[]>([])
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
-    DEFAULT_PAYMENT_METHOD,
+  const [cart, setCart] = useState<CartItem[]>(() =>
+    resumeSnapshot ? [] : loadStoredCart(),
   )
-  const [delivery, setDelivery] = useState<DeliveryDetails>({
-    name: '',
-    phone: '',
-    email: '',
-    address: '',
-    instructions: '',
-  })
-  const [orderNumber, setOrderNumber] = useState<string | null>(null)
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
+    () => resumeSnapshot?.paymentMethod ?? DEFAULT_PAYMENT_METHOD,
+  )
+  const [delivery, setDelivery] = useState<DeliveryDetails>(
+    () =>
+      resumeSnapshot?.delivery ?? {
+        name: '',
+        phone: '',
+        email: '',
+        address: '',
+        instructions: '',
+      },
+  )
+  const [placedId, setPlacedId] = useState<string | null>(
+    () => resumeSnapshot?.orderId ?? null,
+  )
+  const [orderNumber, setOrderNumber] = useState<string | null>(
+    () => resumeSnapshot?.orderNumber ?? null,
+  )
+  const [placed, setPlaced] = useState(() => resumeSnapshot)
   const [placeError, setPlaceError] = useState<string | null>(null)
   const [isPlacing, setIsPlacing] = useState(false)
   const { user, displayName } = useAuth()
   const stepRef = useRef(step)
   stepRef.current = step
+  const resumeRequestedRef = useRef(requestedStep)
 
   const selectedProduct = catalog.find((product) => product.id === selectedProductId)
   const selectedVariant = selectedProduct?.variants.find(
@@ -149,6 +182,28 @@ export function OrderFlow({
   useEffect(() => {
     void loadCatalog()
   }, [loadCatalog])
+
+  useEffect(() => {
+    if (isLoadingCatalog || placed || catalogError || catalog.length === 0) {
+      return
+    }
+
+    setCart((current) => pruneCart(current, catalog))
+  }, [catalog, catalogError, isLoadingCatalog, placed])
+
+  useEffect(() => {
+    if (placed) {
+      return
+    }
+
+    saveStoredCart(cart)
+  }, [cart, placed])
+
+  useEffect(() => {
+    if (resumeRequestedRef.current) {
+      clearConfirmation()
+    }
+  }, [])
 
   const navigate = useCallback((next: OrderStep, prepare?: () => void) => {
     const current = stepRef.current
@@ -259,21 +314,11 @@ export function OrderFlow({
   }
 
   function changeCartQuantity(itemId: string, delta: number) {
-    const nextCart = adjustCartQuantity(cart, itemId, delta)
-    setCart(nextCart)
-
-    if (nextCart.length === 0 && step === 'cart') {
-      navigate('category')
-    }
+    setCart((current) => adjustCartQuantity(current, itemId, delta))
   }
 
   function removeFromCart(itemId: string) {
-    const nextCart = cart.filter((item) => item.id !== itemId)
-    setCart(nextCart)
-
-    if (nextCart.length === 0 && step === 'cart') {
-      navigate('category')
-    }
+    setCart((current) => current.filter((item) => item.id !== itemId))
   }
 
   function selectPaymentMethod(method: PaymentMethod) {
@@ -289,9 +334,22 @@ export function OrderFlow({
     setIsPlacing(true)
 
     try {
-      const placed = await placeGuestOrder(cart, delivery, paymentMethod)
-      setOrderNumber(placed.orderNumber)
-      navigate('confirmation')
+      const result = await placeGuestOrder(cart, delivery, paymentMethod)
+      const snapshot = {
+        orderId: result.id,
+        orderNumber: result.orderNumber,
+        delivery,
+        paymentMethod,
+        items: cart,
+      }
+      saveConfirmation(snapshot)
+      saveStoredCart([])
+      navigate('confirmation', () => {
+        setPlaced(snapshot)
+        setPlacedId(result.id)
+        setOrderNumber(result.orderNumber)
+        setCart([])
+      })
     } catch (error) {
       setPlaceError(
         error instanceof Error
@@ -309,13 +367,23 @@ export function OrderFlow({
     navigate('home', () => {
       resetSelection()
       setCart([])
+      setPlaced(null)
+      setPlacedId(null)
       setOrderNumber(null)
       setPlaceError(null)
       setPaymentMethod(DEFAULT_PAYMENT_METHOD)
       setDelivery({ name: '', phone: '', email: '', address: '', instructions: '' })
+      clearConfirmation()
+      saveStoredCart([])
     })
     void loadCatalog()
   }
+
+  useEffect(() => {
+    if (step === 'payment' && SKIP_PAYMENT_STEP) {
+      navigate('delivery')
+    }
+  }, [step, navigate])
 
   useEffect(() => {
     onCartChange(cart.length)
@@ -340,25 +408,44 @@ export function OrderFlow({
       return
     }
 
+    const leaveConfirmation = () => {
+      if (!placed) {
+        return
+      }
+      clearConfirmation()
+      setPlaced(null)
+      setPlacedId(null)
+      setOrderNumber(null)
+    }
+
     if (requestedStep.step === 'home') {
       if (stepRef.current !== 'home') {
-        navigate('home', resetSelection)
+        navigate('home', () => {
+          resetSelection()
+          leaveConfirmation()
+        })
       }
     } else if (requestedStep.step === 'category') {
-      navigate('category', resetSelection)
+      navigate('category', () => {
+        resetSelection()
+        leaveConfirmation()
+      })
     } else if (requestedStep.step === 'product') {
       navigate('product', () => {
         setCategory(requestedStep.category ?? 'sausage')
         setSelectedProductId(null)
         setSelectedVariantId(null)
         setQuantity(null)
+        leaveConfirmation()
       })
-    } else if (requestedStep.step === 'cart' && cart.length > 0) {
-      navigate('cart')
+    } else if (requestedStep.step === 'cart') {
+      navigate('cart', leaveConfirmation)
+    } else if (requestedStep.step === 'payment') {
+      navigate(SKIP_PAYMENT_STEP ? 'delivery' : 'payment', leaveConfirmation)
     }
 
     onRequestedStepHandled()
-  }, [requestedStep, cart.length, onRequestedStepHandled, navigate])
+  }, [requestedStep, onRequestedStepHandled, navigate, placed])
 
   // The flow only offers what can actually be bought right now.
   const available = catalog.filter((product) => !isProductSoldOut(product))
@@ -379,8 +466,6 @@ export function OrderFlow({
     delivery.address.trim().length > 0
 
   const accountEmail = user?.email ?? null
-  /** Mirrors place_guest_order: a typed address wins, then the account's. */
-  const notifyEmail = delivery.email.trim() || accountEmail
 
   if (step === 'home') {
     return (
@@ -392,7 +477,7 @@ export function OrderFlow({
     )
   }
 
-  if (isLoadingCatalog) {
+  if (isLoadingCatalog && step !== 'confirmation') {
     return (
       <StepLayout title="Loading the menu…">
         <p className={styles.emptyState}>One moment.</p>
@@ -400,7 +485,7 @@ export function OrderFlow({
     )
   }
 
-  if (catalogError) {
+  if (catalogError && step !== 'confirmation') {
     return (
       <StepLayout
         title="The menu didn’t load"
@@ -455,6 +540,7 @@ export function OrderFlow({
                     ? `${CATEGORY_DESCRIPTIONS[value]} From ${formatPrice(Math.min(...from))}.`
                     : CATEGORY_DESCRIPTIONS[value]
                 }
+                thumbnail={<CategoryVisual category={value} />}
                 onClick={() => selectCategory(value)}
               />
             )
@@ -616,17 +702,29 @@ export function OrderFlow({
     return (
       <StepLayout
         title="Your cart"
-        subtitle="Adjust quantities, then choose how to pay."
+        subtitle={
+          cart.length === 0
+            ? 'Add items from the menu to continue.'
+            : SKIP_PAYMENT_STEP
+              ? 'Adjust quantities, then enter delivery details.'
+              : 'Adjust quantities, then choose how to pay.'
+        }
         progress={CHECKOUT_PROGRESS.cart}
         actions={
-          <>
-            <Button variant="secondary" onClick={() => navigate('category')}>
-              Add more items
-            </Button>
-            <Button onClick={() => navigate('payment')} disabled={cart.length === 0}>
-              Continue to payment
-            </Button>
-          </>
+          cart.length === 0 ? (
+            <Button onClick={() => navigate('category')}>Start ordering</Button>
+          ) : (
+            <>
+              <Button variant="secondary" onClick={() => navigate('category')}>
+                Add more items
+              </Button>
+              <Button
+                onClick={() => navigate(SKIP_PAYMENT_STEP ? 'delivery' : 'payment')}
+              >
+                {SKIP_PAYMENT_STEP ? 'Continue' : 'Continue to payment'}
+              </Button>
+            </>
+          )
         }
       >
         {cart.length === 0 ? (
@@ -705,21 +803,8 @@ export function OrderFlow({
             onClick={() => selectPaymentMethod(option.id)}
           />
         ))}
-        {UPCOMING_PAYMENT_METHODS.length > 0 ? (
-          <div className={styles.group}>
-            <h2 className={styles.groupTitle}>Coming soon</h2>
-            {UPCOMING_PAYMENT_METHODS.map((option) => (
-              <SelectionCard
-                key={option.label}
-                label={option.label}
-                description={option.description}
-                disabled
-              />
-            ))}
-          </div>
-        ) : null}
         <p className={styles.hint}>
-          We’re setting up online payment. Until then, orders are settled at the door.
+          Pay the driver when the order arrives. Nothing is charged now.
         </p>
       </StepLayout>
     )
@@ -733,8 +818,11 @@ export function OrderFlow({
         progress={CHECKOUT_PROGRESS.delivery}
         actions={
           <>
-            <Button variant="secondary" onClick={() => navigate('payment')}>
-              Back to payment
+            <Button
+              variant="secondary"
+              onClick={() => navigate(SKIP_PAYMENT_STEP ? 'cart' : 'payment')}
+            >
+              {SKIP_PAYMENT_STEP ? 'Back to cart' : 'Back to payment'}
             </Button>
             <Button
               type="submit"
@@ -868,63 +956,86 @@ export function OrderFlow({
   }
 
   if (step === 'confirmation') {
+    const confirmation = placed
+    const confirmationItems = confirmation?.items ?? cart
+    const confirmationDelivery = confirmation?.delivery ?? delivery
+    const confirmationPayment = confirmation?.paymentMethod ?? paymentMethod
+    const confirmationNumber = confirmation?.orderNumber ?? orderNumber
+    const confirmationId = confirmation?.orderId ?? placedId
+    const confirmationEmail =
+      confirmationDelivery.email.trim() || accountEmail
+    const trackHref = confirmationId ? `/orders/${confirmationId}` : '/orders'
+
     return (
       <StepLayout
         title="Order received"
         subtitle={
-          orderNumber
-            ? `Keep this number handy: ${orderNumber}. We’ll prepare your order for delivery.`
+          confirmationNumber
+            ? `Keep this number handy: ${confirmationNumber}. We’ll prepare your order for delivery.`
             : 'We’ll prepare your order for delivery.'
         }
         actions={<Button onClick={orderAgain}>Order again</Button>}
       >
         <div className={styles.summaryCard}>
-          {orderNumber ? (
+          {confirmationNumber ? (
             <>
               <p className={styles.summaryLabel}>Order number</p>
-              <p className={styles.summaryValue}>{orderNumber}</p>
+              <p className={styles.summaryValue}>{confirmationNumber}</p>
             </>
           ) : null}
           <p className={styles.summaryLabel}>Deliver to</p>
-          <p className={styles.summaryValue}>{delivery.name}</p>
-          <p className={styles.summaryMuted}>{delivery.phone}</p>
-          <p className={styles.summaryMuted}>{delivery.address}</p>
-          {delivery.instructions.trim() ? (
+          <p className={styles.summaryValue}>{confirmationDelivery.name}</p>
+          <p className={styles.summaryMuted}>{confirmationDelivery.phone}</p>
+          <p className={styles.summaryMuted}>{confirmationDelivery.address}</p>
+          {confirmationDelivery.instructions.trim() ? (
             <>
               <p className={styles.summaryLabel}>Notes</p>
-              <p className={styles.summaryMuted}>{delivery.instructions}</p>
+              <p className={styles.summaryMuted}>{confirmationDelivery.instructions}</p>
             </>
           ) : null}
           <p className={styles.summaryLabel}>Payment</p>
-          <p className={styles.summaryValue}>{PAYMENT_METHOD_LABELS[paymentMethod]}</p>
+          <p className={styles.summaryValue}>{PAYMENT_METHOD_LABELS[confirmationPayment]}</p>
           <p className={styles.summaryLabel}>Items</p>
           <ul className={styles.summaryList}>
-            {cart.map((item) => (
+            {confirmationItems.map((item) => (
               <li key={item.id}>
                 <span>{formatCartItem(item)}</span>
                 <span>{formatPrice(lineTotal(item))}</span>
               </li>
             ))}
           </ul>
-          <OrderTotals items={cart} variant="inline" />
+          <OrderTotals items={confirmationItems} variant="inline" />
+          {confirmationDelivery.phone.trim() ? (
+            <p className={styles.nextStep}>
+              We’ll call {confirmationDelivery.phone} to confirm the delivery.
+            </p>
+          ) : null}
           <p className={styles.nextStep}>
             Nothing was charged here. Pay the driver when your order arrives — we’ll
             confirm the details by phone first.
           </p>
-          {notifyEmail ? (
+          {confirmationEmail ? (
             <p className={styles.nextStep}>
-              We’ll email {notifyEmail} when the order is confirmed and again when it
+              We’ll email {confirmationEmail} when the order is confirmed and again when it
               leaves for delivery.
             </p>
           ) : null}
           {user ? (
             <p className={styles.nextStep}>
-              <Link to="/orders">Track this order</Link> in your account.
+              <Link to={trackHref}>Track this order</Link> in your account.
             </p>
           ) : (
             <p className={styles.nextStep}>
               Sign in next time to track orders from this device.{' '}
-              <Link to="/login">Get a sign-in link</Link>
+              <Link
+                to="/login"
+                state={{
+                  from:
+                    confirmationEmail && confirmationId ? trackHref : '/orders',
+                }}
+              >
+                Get a sign-in link
+              </Link>
             </p>
           )}
         </div>

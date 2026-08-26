@@ -1,5 +1,5 @@
 import { formatQuantity } from '../data/products'
-import { requireSupabase, supabase } from './supabase'
+import { isSupabaseConfigured, requireSupabase, supabase } from './supabase'
 import type {
   CartItem,
   DeliveryDetails,
@@ -102,6 +102,18 @@ export async function fetchMyOrders(): Promise<Order[]> {
   }
 
   return ((data ?? []) as OrderRow[]).map((row) => mapOrder(row))
+}
+
+/** Attach guest checkout rows whose contact_email matches the signed-in account. */
+export async function claimGuestOrders() {
+  if (!isSupabaseConfigured()) {
+    return
+  }
+
+  const { error } = await supabase.rpc('claim_guest_orders')
+  if (error) {
+    console.warn('claim_guest_orders:', error.message)
+  }
 }
 
 export async function fetchMyOrder(id: string): Promise<Order> {

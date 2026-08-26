@@ -1,4 +1,5 @@
 import { DELIVERY_PRICE, formatQuantity, quantityStepFor, vatIncludedIn } from '../data/products'
+import type { Product } from '../types/catalog'
 import type { CartItem } from '../types/order'
 
 export const MAX_LINE_QUANTITY = 10
@@ -75,4 +76,38 @@ export function moneyFromCart(items: CartItem[]) {
     vatAmount: vatIncludedIn(subtotal),
     total: orderTotal(items),
   }
+}
+
+/** Drop lines the catalog can no longer sell, and cap quantities to stock. */
+export function pruneCart(cart: CartItem[], catalog: Product[]): CartItem[] {
+  return cart.flatMap((item) => {
+    const product = catalog.find((entry) => entry.id === item.productId && entry.isActive)
+    const variant = product?.variants.find((entry) => entry.id === item.variantId && entry.isActive)
+
+    if (!product || !variant) {
+      return []
+    }
+
+    const stockLimit = variant.trackStock ? variant.stockQuantity : null
+    if (stockLimit !== null && stockLimit <= 0) {
+      return []
+    }
+
+    const quantity = Math.min(item.quantity, maxQuantityFor({ stockLimit }))
+    if (quantity < quantityStepFor(variant.unit)) {
+      return []
+    }
+
+    return [
+      {
+        ...item,
+        productName: product.name,
+        variantLabel: variant.label,
+        unit: variant.unit,
+        unitPrice: variant.price,
+        stockLimit,
+        quantity,
+      },
+    ]
+  })
 }

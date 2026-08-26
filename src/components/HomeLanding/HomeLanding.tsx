@@ -1,10 +1,10 @@
 import { Package, ShoppingBag, Truck } from 'lucide-react'
 import { Button } from '../Button/Button'
+import { CategoryVisual } from '../CategoryVisual/CategoryVisual'
+import { CITY, TAGLINE } from '../../data/brand'
 import {
   CATEGORY_DESCRIPTIONS,
   CATEGORY_LABELS,
-  DELIVERY_PRICE,
-  VAT_RATE,
   formatPrice,
 } from '../../data/products'
 import { isProductSoldOut, sellableVariants } from '../../types/catalog'
@@ -21,6 +21,12 @@ type HomeLandingProps = {
 }
 
 const CATEGORY_ORDER: Category[] = ['meat', 'sausage']
+
+const TRUST = [
+  'Pay on delivery',
+  'No account needed',
+  `Delivery across ${CITY}`,
+]
 
 const STEPS = [
   {
@@ -76,7 +82,6 @@ export function HomeLanding({
   onStartOrder,
   onStartCategory,
 }: HomeLandingProps) {
-  const vatPercent = Math.round(VAT_RATE * 100)
   const summaries = CATEGORY_ORDER.map((category) => summarise(catalog, category)).filter(
     (summary): summary is CategorySummary => summary !== null,
   )
@@ -99,13 +104,15 @@ export function HomeLanding({
           </picture>
         </div>
         <div className={styles.jumbotronInner}>
-          <p className={styles.eyebrow}>Kigali · Prepared to order</p>
+          <p className={styles.eyebrow}>
+            {CITY} · {TAGLINE}
+          </p>
           <h1 id="home-heading" className={styles.headline}>
-            Pork ribs, ham, and sausage — delivered
+            Sausage, ribs, and ham — delivered
           </h1>
           <p className={styles.lede}>
-            Order from Starbloom in a few steps. We pack fresh pork and bring it
-            to your door. Prices below already include VAT.
+            Pork and beef sausage, packed to order, plus ribs and ham. We bring it to
+            your door.
           </p>
           <div className={styles.ctas}>
             <Button onClick={onStartOrder}>Start ordering</Button>
@@ -113,6 +120,11 @@ export function HomeLanding({
               See the menu
             </a>
           </div>
+          <ul className={styles.trust}>
+            {TRUST.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
           <dl className={styles.highlights}>
             {summaries.map((summary) =>
               summary.fromPrice === null ? null : (
@@ -125,26 +137,18 @@ export function HomeLanding({
                 </div>
               ),
             )}
-            <div>
-              <dt>Delivery</dt>
-              <dd>
-                {formatPrice(DELIVERY_PRICE)}
-                <span> across Kigali</span>
-              </dd>
-            </div>
           </dl>
         </div>
       </section>
 
       <section id="menu" className={styles.menu} aria-labelledby="menu-heading">
         <div className={styles.sectionInner}>
-          <p className={styles.sectionEyebrow}>Menu</p>
           <div className={styles.sectionIntro}>
             <h2 id="menu-heading" className={styles.sectionTitle}>
               What you can order today
             </h2>
             <p className={styles.sectionLede}>
-              VAT ({vatPercent}%) is included in every listed price.
+              Ready for quality sausages at a competitive price?
             </p>
           </div>
           <div className={styles.menuGrid}>
@@ -156,6 +160,7 @@ export function HomeLanding({
                 onClick={() => onStartCategory(summary.category)}
                 disabled={summary.soldOut}
               >
+                <CategoryVisual category={summary.category} className={styles.menuVisual} />
                 <p className={styles.menuKicker}>
                   {CATEGORY_DESCRIPTIONS[summary.category]}
                 </p>

@@ -18,8 +18,9 @@ In the SQL editor, run in order:
 4. [`supabase/migrations/004_payment_methods.sql`](../supabase/migrations/004_payment_methods.sql)
 5. [`supabase/migrations/005_order_email_notifications.sql`](../supabase/migrations/005_order_email_notifications.sql)
 6. [`supabase/migrations/006_support_inquiries.sql`](../supabase/migrations/006_support_inquiries.sql)
+7. [`supabase/migrations/007_claim_guest_orders.sql`](../supabase/migrations/007_claim_guest_orders.sql)
 
-`001` creates `orders` / `order_items`, guest checkout RPC, and Realtime. `002` adds `profiles`, `orders.customer_id`, staff vs customer RLS, and attaches signed-in users to new orders. `003` adds the catalog (`products`, `product_variants`), stock tracking (`stock_movements`), and seeds the price menu. `004` adds `orders.payment_method`. `005` adds `orders.contact_email`, the `order_emails` log, and the trigger that asks the Edge Function to send status emails. `006` adds `support_inquiries`, the public contact-form RPC, and the trigger that asks a second Edge Function to email staff.
+`001` creates `orders` / `order_items`, guest checkout RPC, and Realtime. `002` adds `profiles`, `orders.customer_id`, staff vs customer RLS, and attaches signed-in users to new orders. `003` adds the catalog (`products`, `product_variants`), stock tracking (`stock_movements`), and seeds the price menu. `004` adds `orders.payment_method`. `005` adds `orders.contact_email`, the `order_emails` log, and the trigger that asks the Edge Function to send status emails. `006` adds `support_inquiries`, the public contact-form RPC, and the trigger that asks a second Edge Function to email staff. `007` lets a signed-in customer attach guest orders placed with the same email (`claim_guest_orders`), so Track order shows the checkout they just finished.
 
 If Realtime was already enabled for `orders`, a duplicate-publication error on `001` can be ignored.
 
@@ -59,7 +60,7 @@ then move its entry into `PAYMENT_METHODS` and give it a label in `PAYMENT_METHO
 2. **Allow new users to sign up** so customers can receive a first-time magic link. Do not add a staff sign-up form in the app.
 3. Authentication → URL configuration:
    - Site URL: your app origin (e.g. `http://localhost:5173` in dev).
-   - Redirect URLs: `{origin}/auth/callback` (and the production equivalent).
+   - Redirect URLs: `{origin}/auth/callback` (and the production equivalent). A `?next=` query is appended after login; you do not need a separate allow-list entry for it.
 4. Authentication → Users → **Add user** with email + password for 1–2 staff accounts.
 5. Promote staff in SQL (magic-link users stay `customer` by default):
 
@@ -74,7 +75,7 @@ Existing auth users get a `profiles` row when `002` runs. New sign-ins get a row
 ## 4. Confirm RLS
 
 - Guest checkout uses the anon key and `place_guest_order`. Anon must **not** be able to list orders.
-- Signed-in **customers** can `select` only rows where `customer_id = auth.uid()`. They cannot update orders.
+- Signed-in **customers** can `select` only rows where `customer_id = auth.uid()`. They cannot update orders. Guest rows with a matching `contact_email` are attached by the `claim_guest_orders` RPC after magic-link (migration `007`).
 - Signed-in **staff** can read and update status / payment / cancel reason. The app never deletes orders.
 - A customer session must not reach the admin inbox (the app also checks `profiles.role`).
 - Anyone may read **active** products and variants. Only staff can write to them or read `stock_movements`.
