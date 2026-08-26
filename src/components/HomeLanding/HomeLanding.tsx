@@ -5,7 +5,6 @@ import { CITY, TAGLINE } from '../../data/brand'
 import {
   CATEGORY_DESCRIPTIONS,
   CATEGORY_LABELS,
-  VAT_RATE,
   formatPrice,
 } from '../../data/products'
 import { isProductSoldOut, sellableVariants } from '../../types/catalog'
