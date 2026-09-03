@@ -174,7 +174,7 @@ export function HomeLanding({
                 )}
                 <span className={styles.menuAction}>
                   {summary.soldOut
-                    ? 'Sold out'
+                    ? 'Out of Stock'
                     : `Order ${CATEGORY_LABELS[summary.category].toLowerCase()}`}
                 </span>
               </button>

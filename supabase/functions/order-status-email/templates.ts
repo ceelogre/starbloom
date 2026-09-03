@@ -80,7 +80,7 @@ const BRAND_STYLE = 'font-size:13px;letter-spacing:0.08em;text-transform:upperca
 function layout(parts: { heading: string; lead: string; body: string; footer: string }) {
   return `<!doctype html>
 <html>
-  <body style="margin:0;background:#f6efe2">
+  <body style="margin:0;">
     <div style="${WRAPPER_STYLE}">
       <p style="${BRAND_STYLE}">Starbloom</p>
       <h1 style="font-size:22px;margin:8px 0 12px">${parts.heading}</h1>
@@ -175,7 +175,7 @@ function confirmedEmail(
     subject: `Order ${order.order_number} is confirmed`,
     html: layout({
       heading: `Order ${escapeHtml(order.order_number)} is confirmed`,
-      lead: `Hi ${escapeHtml(name)}, we have your order and we are getting it ready. We will email you again when it leaves for delivery.`,
+      lead: `Hi ${escapeHtml(name)}, <br /> we have your order and we are getting it ready. We will email you again when it leaves for delivery.`,
       body,
       footer: footerHtml(order, siteUrl),
     }),
