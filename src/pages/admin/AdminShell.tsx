@@ -1,4 +1,4 @@
-import { ClipboardList, MessageSquare, Package, Store } from 'lucide-react'
+import { ClipboardList, MessageSquare, Package } from 'lucide-react'
 import { DashboardShell } from '../../components/DashboardShell/DashboardShell'
 
 export function AdminShell() {
@@ -28,14 +28,6 @@ export function AdminShell() {
           icon: Package,
           isActive: (pathname) =>
             pathname === '/admin/inventory' || pathname.startsWith('/admin/inventory/'),
-        },
-      ]}
-      extras={[
-        {
-          to: '/',
-          label: 'View shop',
-          icon: Store,
-          isActive: () => false,
         },
       ]}
       signOutTo="/admin/login"

@@ -58,7 +58,6 @@ export type StepRequest = {
 }
 
 type OrderFlowProps = {
-  onCartChange: (count: number) => void
   onStepChange: (step: OrderStep) => void
   requestedStep: StepRequest | null
   onRequestedStepHandled: () => void
@@ -107,7 +106,6 @@ function variantDescription(variant: ProductVariant) {
 }
 
 export function OrderFlow({
-  onCartChange,
   onStepChange,
   requestedStep,
   onRequestedStepHandled,
@@ -384,10 +382,6 @@ export function OrderFlow({
       navigate('delivery')
     }
   }, [step, navigate])
-
-  useEffect(() => {
-    onCartChange(cart.length)
-  }, [cart.length, onCartChange])
 
   useEffect(() => {
     onStepChange(step)

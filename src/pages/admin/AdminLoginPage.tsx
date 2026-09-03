@@ -1,7 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Navigate, useLocation } from 'react-router'
 import { useAuth } from '../../auth/useAuth'
-import { Header } from '../../components/Header/Header'
 import { Button } from '../../components/Button/Button'
 import { StepLayout } from '../../components/StepLayout/StepLayout'
 import { pageTitle } from '../../data/brand'
@@ -48,7 +47,6 @@ export function AdminLoginPage() {
 
   return (
     <div className={styles.page}>
-      <Header variant="login" />
       <StepLayout
         title="Staff login"
         subtitle="Sign in to process deliveries."

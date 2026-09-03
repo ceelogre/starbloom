@@ -28,6 +28,8 @@ export function loadStoredCart(): CartItem[] {
   return Array.isArray(items) ? items : []
 }
 
+export const CART_CHANGED_EVENT = 'starbloom:cart'
+
 export function saveStoredCart(cart: CartItem[]) {
   try {
     if (cart.length === 0) {
@@ -38,6 +40,8 @@ export function saveStoredCart(cart: CartItem[]) {
   } catch {
     /* Private mode may block localStorage. */
   }
+
+  window.dispatchEvent(new Event(CART_CHANGED_EVENT))
 }
 
 export function loadConfirmation(): ConfirmationSnapshot | null {

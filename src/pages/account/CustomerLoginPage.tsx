@@ -1,7 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router'
 import { useAuth } from '../../auth/useAuth'
-import { Header } from '../../components/Header/Header'
 import { Button } from '../../components/Button/Button'
 import { StepLayout } from '../../components/StepLayout/StepLayout'
 import { isOrdersPath, rememberAuthNext } from '../../lib/auth-redirect'
@@ -49,7 +48,6 @@ export function CustomerLoginPage() {
 
   return (
     <div className={styles.page}>
-      <Header variant="account" />
       <StepLayout
         title="Track your order"
         subtitle={

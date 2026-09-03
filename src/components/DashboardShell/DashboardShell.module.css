@@ -22,11 +22,17 @@
   border-bottom: 1px solid var(--color-border);
 }
 
-.topBarStart {
+.topBarStart,
+.topBarEnd {
   display: flex;
   align-items: center;
   gap: var(--space-3);
   min-width: 0;
+}
+
+.topBarEnd {
+  flex: none;
+  gap: var(--space-2);
 }
 
 .menuButton,
