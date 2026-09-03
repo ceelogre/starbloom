@@ -585,7 +585,7 @@ export function OrderFlow({
       >
         {categoryProducts.length === 0 ? (
           <p className={styles.emptyState}>
-            Everything in this range is sold out right now. Try the other range, or
+            Everything in this range is out of stock right now. Try the other range, or
             check back later.
           </p>
         ) : null}
@@ -929,7 +929,7 @@ export function OrderFlow({
               onChange={(event) =>
                 setDelivery((current) => ({ ...current, address: event.target.value }))
               }
-              placeholder="Street, neighbourhood, landmarks"
+              placeholder="location e.g. kabuga, Kimironko kwa Mushimire"
               required
             />
           </label>
