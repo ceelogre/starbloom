@@ -2,6 +2,16 @@
 // are repeated here. Keep them in step with src/data/products.ts and
 // src/lib/payment.ts.
 
+import {
+  CTA_STYLE,
+  escapeHtml,
+  layout,
+  MUTED_COLOR,
+  MUTED_STYLE,
+  SECTION_STYLE,
+  SECTION_TITLE_STYLE,
+} from '../_shared/email-layout.ts'
+
 export type NotifiableStatus = 'confirmed' | 'out_for_delivery'
 
 export type OrderRow = {
@@ -53,45 +63,6 @@ function lineLabel(item: OrderItemRow) {
   return `${name} — ${formatQuantity(Number(item.quantity), item.unit)}`
 }
 
-/** Names, addresses and notes are customer input and land inside markup. */
-function escapeHtml(value: string) {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
-}
-
-const WRAPPER_STYLE = [
-  'font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
-  'font-size: 15px',
-  'line-height: 1.5',
-  'color: #1c2418',
-  'max-width: 34rem',
-  'margin: 0 auto',
-  'padding: 24px',
-].join(';')
-
-const MUTED_COLOR = '#5a6352'
-const MUTED_STYLE = `color: ${MUTED_COLOR}; margin: 4px 0`
-const BRAND_STYLE = 'font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:#1f6b38;margin:4px 0;font-weight:700'
-
-function layout(parts: { heading: string; lead: string; body: string; footer: string }) {
-  return `<!doctype html>
-<html>
-  <body style="margin:0;">
-    <div style="${WRAPPER_STYLE}">
-      <p style="${BRAND_STYLE}">Starbloom</p>
-      <h1 style="font-size:22px;margin:8px 0 12px">${parts.heading}</h1>
-      <p style="margin:0 0 20px">${parts.lead}</p>
-      ${parts.body}
-      <p style="margin-top:24px;${MUTED_STYLE}">${parts.footer}</p>
-    </div>
-  </body>
-</html>`
-}
-
 function itemsHtml(items: OrderItemRow[]) {
   return items.map((item) => `<li style="margin:2px 0">${escapeHtml(lineLabel(item))}</li>`).join('')
 }
@@ -126,7 +97,7 @@ function footerHtml(order: OrderRow, siteUrl: string | undefined) {
     return REPLY_LINE
   }
 
-  return `<a href="${escapeHtml(url)}">Track this order</a> in your account, or reply to this email if anything needs changing.`
+  return `<a href="${escapeHtml(url)}" style="${CTA_STYLE}">Track this order</a><br /><span style="display:inline-block;margin-top:10px">or reply to this email if anything needs changing.</span>`
 }
 
 function footerText(order: OrderRow, siteUrl: string | undefined) {
@@ -143,15 +114,21 @@ function confirmedEmail(
   const name = order.customer_name.split(' ')[0] || 'there'
 
   const body = `
-    <h2 style="font-size:16px;margin:0 0 4px">Your order</h2>
-    <ul style="margin:0 0 16px;padding-left:20px">${itemsHtml(items)}</ul>
-    ${totalsHtml(order)}
-    <h2 style="font-size:16px;margin:24px 0 4px">Delivering to</h2>
-    <p style="margin:0">${escapeHtml(order.address)}</p>
-    <p style="${MUTED_STYLE}">${escapeHtml(order.phone)}</p>
-    ${order.instructions.trim() ? `<p style="${MUTED_STYLE}">Notes: ${escapeHtml(order.instructions)}</p>` : ''}
-    <h2 style="font-size:16px;margin:24px 0 4px">Payment</h2>
-    <p style="margin:0">${escapeHtml(payment)}</p>`
+    <div style="${SECTION_STYLE}">
+      <h2 style="${SECTION_TITLE_STYLE}">Your order</h2>
+      <ul style="margin:0 0 16px;padding-left:20px">${itemsHtml(items)}</ul>
+      ${totalsHtml(order)}
+    </div>
+    <div style="${SECTION_STYLE}">
+      <h2 style="${SECTION_TITLE_STYLE}">Delivering to</h2>
+      <p style="margin:0">${escapeHtml(order.address)}</p>
+      <p style="${MUTED_STYLE}">${escapeHtml(order.phone)}</p>
+      ${order.instructions.trim() ? `<p style="${MUTED_STYLE}">Notes: ${escapeHtml(order.instructions)}</p>` : ''}
+    </div>
+    <div style="${SECTION_STYLE}">
+      <h2 style="${SECTION_TITLE_STYLE}">Payment</h2>
+      <p style="margin:0">${escapeHtml(payment)}</p>
+    </div>`
 
   const text = [
     `Hi ${name}, order ${order.order_number} is confirmed.`,
@@ -195,11 +172,14 @@ function outForDeliveryEmail(
       : `Order total: ${formatPrice(order.total)}.`
 
   const body = `
-    <p style="margin:0 0 4px"><strong>${escapeHtml(order.order_number)}</strong></p>
-    <p style="margin:0">${escapeHtml(order.address)}</p>
-    <p style="${MUTED_STYLE}">${escapeHtml(order.phone)}</p>
-    <p style="margin:16px 0 0">${escapeHtml(owed)}</p>
-    <p style="${MUTED_STYLE}">${escapeHtml(payment)}</p>`
+    <div style="${SECTION_STYLE}">
+      <h2 style="${SECTION_TITLE_STYLE}">Delivery details</h2>
+      <p style="margin:0 0 4px"><strong>${escapeHtml(order.order_number)}</strong></p>
+      <p style="margin:0">${escapeHtml(order.address)}</p>
+      <p style="${MUTED_STYLE}">${escapeHtml(order.phone)}</p>
+      <p style="margin:16px 0 0">${escapeHtml(owed)}</p>
+      <p style="${MUTED_STYLE}">${escapeHtml(payment)}</p>
+    </div>`
 
   const text = [
     `Hi ${name}, order ${order.order_number} is on the way.`,
