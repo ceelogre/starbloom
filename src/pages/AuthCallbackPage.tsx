@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Navigate } from 'react-router'
 import { useAuth } from '../auth/useAuth'
-import { Header } from '../components/Header/Header'
 import { clearAuthNext, peekAuthNext } from '../lib/auth-redirect'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import styles from '../components/ProtectedRoute/ProtectedRoute.module.css'
@@ -42,10 +41,5 @@ export function AuthCallbackPage() {
     return <Navigate to="/login" replace />
   }
 
-  return (
-    <div>
-      <Header variant="account" />
-      <p className={styles.status}>Signing you in…</p>
-    </div>
-  )
+  return <p className={styles.status}>Signing you in…</p>
 }

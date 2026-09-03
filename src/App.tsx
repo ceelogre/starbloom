@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router'
 import { AuthProvider } from './auth/AuthProvider'
 import { ProtectedRoute } from './components/ProtectedRoute/ProtectedRoute'
+import { SiteLayout } from './components/SiteLayout/SiteLayout'
 import { AuthCallbackPage } from './pages/AuthCallbackPage'
 import { CustomerLoginPage } from './pages/account/CustomerLoginPage'
 import { CustomerOrderDetailPage } from './pages/account/CustomerOrderDetailPage'
@@ -22,11 +23,14 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<ShopPage />} />
-          <Route path="/contact" element={<ContactPage />} />
-          <Route path="/login" element={<CustomerLoginPage />} />
-          <Route path="/auth/callback" element={<AuthCallbackPage />} />
-          <Route path="/admin/login" element={<AdminLoginPage />} />
+          <Route element={<SiteLayout />}>
+            <Route path="/" element={<ShopPage />} />
+            <Route path="/contact" element={<ContactPage />} />
+            <Route path="/inquiry" element={<Navigate to="/contact" replace />} />
+            <Route path="/login" element={<CustomerLoginPage />} />
+            <Route path="/auth/callback" element={<AuthCallbackPage />} />
+            <Route path="/admin/login" element={<AdminLoginPage />} />
+          </Route>
           <Route element={<ProtectedRoute />}>
             <Route path="/orders" element={<CustomerShell />}>
               <Route index element={<CustomerOrdersPage />} />

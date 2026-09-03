@@ -1,6 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router'
-import { Header } from '../components/Header/Header'
 import { Button } from '../components/Button/Button'
 import { StepLayout } from '../components/StepLayout/StepLayout'
 import { CITY, INSTAGRAM_URL, PHONE, WHATSAPP_URL, pageTitle } from '../data/brand'
@@ -64,7 +63,6 @@ export function ContactPage() {
 
   return (
     <div className={formStyles.page}>
-      <Header variant="login" />
       <StepLayout
         title={sent ? 'Message sent' : 'Contact us'}
         subtitle={
