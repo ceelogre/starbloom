@@ -30,14 +30,6 @@ export function AdminShell() {
             pathname === '/admin/inventory' || pathname.startsWith('/admin/inventory/'),
         },
       ]}
-      extras={[
-        {
-          to: '/',
-          label: 'View shop',
-          icon: Store,
-          isActive: () => false,
-        },
-      ]}
       signOutTo="/admin/login"
     />
   )

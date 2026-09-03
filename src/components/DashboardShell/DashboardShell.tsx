@@ -147,50 +147,53 @@ export function DashboardShell({
             {brand}
           </Link>
         </div>
-        <div className={styles.profile} ref={profileRef}>
-          <button
-            type="button"
-            className={styles.profileButton}
-            aria-expanded={profileOpen}
-            aria-haspopup="menu"
-            aria-controls="profile-menu"
-            onClick={() => {
-              setMenuOpen(false)
-              setProfileOpen((open) => !open)
-            }}
-          >
-            <User className={styles.actionIcon} aria-hidden="true" strokeWidth={2} />
-            <span className={styles.profileName}>{profileLabel}</span>
-            <ChevronDown className={styles.profileChevron} aria-hidden="true" strokeWidth={2} />
-          </button>
-          {profileOpen ? (
-            <div id="profile-menu" className={styles.profileMenu} role="menu">
-              {user?.email ? (
-                <p className={styles.profileEmail}>{user.email}</p>
-              ) : null}
-              <Link
-                to={accountTo}
-                role="menuitem"
-                className={styles.profileItem}
-                onClick={() => setProfileOpen(false)}
-              >
-                <User className={styles.actionIcon} aria-hidden="true" strokeWidth={2} />
-                Account
-              </Link>
-              <button
-                type="button"
-                role="menuitem"
-                className={styles.profileItem}
-                onClick={() => {
-                  setProfileOpen(false)
-                  void signOut().then(() => navigate(signOutTo))
-                }}
-              >
-                <LogOut className={styles.actionIcon} aria-hidden="true" strokeWidth={2} />
-                Log out
-              </button>
-            </div>
-          ) : null}
+        <div className={styles.topBarEnd}>
+          <ThemeToggle />
+          <div className={styles.profile} ref={profileRef}>
+            <button
+              type="button"
+              className={styles.profileButton}
+              aria-expanded={profileOpen}
+              aria-haspopup="menu"
+              aria-controls="profile-menu"
+              onClick={() => {
+                setMenuOpen(false)
+                setProfileOpen((open) => !open)
+              }}
+            >
+              <User className={styles.actionIcon} aria-hidden="true" strokeWidth={2} />
+              <span className={styles.profileName}>{profileLabel}</span>
+              <ChevronDown className={styles.profileChevron} aria-hidden="true" strokeWidth={2} />
+            </button>
+            {profileOpen ? (
+              <div id="profile-menu" className={styles.profileMenu} role="menu">
+                {user?.email ? (
+                  <p className={styles.profileEmail}>{user.email}</p>
+                ) : null}
+                <Link
+                  to={accountTo}
+                  role="menuitem"
+                  className={styles.profileItem}
+                  onClick={() => setProfileOpen(false)}
+                >
+                  <User className={styles.actionIcon} aria-hidden="true" strokeWidth={2} />
+                  Account
+                </Link>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className={styles.profileItem}
+                  onClick={() => {
+                    setProfileOpen(false)
+                    void signOut().then(() => navigate(signOutTo))
+                  }}
+                >
+                  <LogOut className={styles.actionIcon} aria-hidden="true" strokeWidth={2} />
+                  Log out
+                </button>
+              </div>
+            ) : null}
+          </div>
         </div>
       </header>
       {menuOpen ? (
@@ -211,10 +214,9 @@ export function DashboardShell({
         <nav className={styles.nav} aria-label={navLabel}>
           {items.map(renderItem)}
         </nav>
-        <div className={styles.footer}>
-          {extras.map(renderItem)}
-          <ThemeToggle />
-        </div>
+        {extras.length > 0 ? (
+          <div className={styles.footer}>{extras.map(renderItem)}</div>
+        ) : null}
       </aside>
       <main className={styles.main}>
         <Outlet />
