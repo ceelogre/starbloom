@@ -59,11 +59,8 @@ export function Header() {
 
   function goShop(start: 'home' | 'cart' | 'how-it-works') {
     setMenuOpen(false)
-    if (location.pathname === '/' && start === 'home') {
-      navigate('/', { state: { start: 'home' } })
-      return
-    }
-    navigate('/', { state: { start } })
+    const onShop = location.pathname === '/'
+    navigate('/', { replace: onShop, state: { start } })
   }
 
   return (
