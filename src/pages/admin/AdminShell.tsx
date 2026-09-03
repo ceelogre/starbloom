@@ -1,4 +1,4 @@
-import { ClipboardList, MessageSquare, Package, Store } from 'lucide-react'
+import { ClipboardList, MessageSquare, Package } from 'lucide-react'
 import { DashboardShell } from '../../components/DashboardShell/DashboardShell'
 
 export function AdminShell() {
