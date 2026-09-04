@@ -229,7 +229,7 @@ export function AdminOrderDetailPage() {
         ) : emails.length === 0 ? (
           <p className={styles.muted}>
             Nothing sent yet. {order.contactEmail} is emailed when this order is
-            confirmed and when it goes out for delivery.
+            confirmed, when it goes out for delivery, and if it is cancelled.
           </p>
         ) : (
           <ul className={styles.notifications}>

@@ -14,10 +14,14 @@ import {
   type OrderRow,
 } from './templates.ts'
 
-const NOTIFIABLE_STATUSES: NotifiableStatus[] = ['confirmed', 'out_for_delivery']
+const NOTIFIABLE_STATUSES: NotifiableStatus[] = [
+  'confirmed',
+  'out_for_delivery',
+  'cancelled',
+]
 
 const ORDER_COLUMNS =
-  'order_number, customer_id, customer_name, phone, contact_email, address, instructions, payment_method, subtotal, delivery_fee, vat_amount, total'
+  'order_number, customer_id, customer_name, phone, contact_email, address, instructions, cancelled_reason, payment_method, subtotal, delivery_fee, vat_amount, total'
 
 type Payload = {
   order_id?: unknown

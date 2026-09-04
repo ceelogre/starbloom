@@ -19,8 +19,9 @@ In the SQL editor, run in order:
 5. [`supabase/migrations/005_order_email_notifications.sql`](../supabase/migrations/005_order_email_notifications.sql)
 6. [`supabase/migrations/006_support_inquiries.sql`](../supabase/migrations/006_support_inquiries.sql)
 7. [`supabase/migrations/007_claim_guest_orders.sql`](../supabase/migrations/007_claim_guest_orders.sql)
+8. [`supabase/migrations/008_cancelled_order_email.sql`](../supabase/migrations/008_cancelled_order_email.sql)
 
-`001` creates `orders` / `order_items`, guest checkout RPC, and Realtime. `002` adds `profiles`, `orders.customer_id`, staff vs customer RLS, and attaches signed-in users to new orders. `003` adds the catalog (`products`, `product_variants`), stock tracking (`stock_movements`), and seeds the price menu. `004` adds `orders.payment_method`. `005` adds `orders.contact_email`, the `order_emails` log, and the trigger that asks the Edge Function to send status emails. `006` adds `support_inquiries`, the public contact-form RPC, and the trigger that asks a second Edge Function to email staff. `007` lets a signed-in customer attach guest orders placed with the same email (`claim_guest_orders`), so Track order shows the checkout they just finished.
+`001` creates `orders` / `order_items`, guest checkout RPC, and Realtime. `002` adds `profiles`, `orders.customer_id`, staff vs customer RLS, and attaches signed-in users to new orders. `003` adds the catalog (`products`, `product_variants`), stock tracking (`stock_movements`), and seeds the price menu. `004` adds `orders.payment_method`. `005` adds `orders.contact_email`, the `order_emails` log, and the trigger that asks the Edge Function to send status emails. `006` adds `support_inquiries`, the public contact-form RPC, and the trigger that asks a second Edge Function to email staff. `007` lets a signed-in customer attach guest orders placed with the same email (`claim_guest_orders`), so Track order shows the checkout they just finished. `008` also emails the customer when staff cancel an order.
 
 If Realtime was already enabled for `orders`, a duplicate-publication error on `001` can be ignored.
 
@@ -29,6 +30,8 @@ If Realtime was already enabled for `orders`, a duplicate-publication error on `
 `005` is safe to run more than once, but it does nothing on its own — until section 6 is done, the trigger it installs finds no Vault secrets and only writes a warning.
 
 `006` is the same: the contact form still saves without mail setup, and the trigger only warns until section 7 is done.
+
+`008` is safe to run more than once. Redeploy `order-status-email` after it so the function accepts `cancelled`.
 
 ## 2b. Inventory
 
@@ -88,7 +91,7 @@ Database → Replication (or Realtime) should include `public.orders`, `public.p
 
 ## 6. Order emails
 
-Customers get an email when an order is marked **confirmed** and again when it is marked **out for delivery**. The address is optional: guests are offered a field at checkout, signed-in customers get the address on their account, and an order with no address is simply skipped. Support inquiries are a separate mail path (section 7).
+Customers get an email when an order is marked **confirmed**, **out for delivery**, or **cancelled**. The address is optional: guests are offered a field at checkout, signed-in customers get the address on their account, and an order with no address is simply skipped. Support inquiries are a separate mail path (section 7).
 
 The path is `orders.status` update → `orders_notify_status_email` trigger → `net.http_post` → the [`order-status-email`](../supabase/functions/order-status-email/index.ts) Edge Function → Resend. The trigger only asks; the function decides and records. Postgres cannot hold the Resend key, and the browser cannot read another customer's email out of `auth.users`, which is why this lives in a function rather than in the app.
 

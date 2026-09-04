@@ -909,8 +909,8 @@ export function OrderFlow({
                 placeholder="you@example.com"
               />
               <span className={styles.fieldHint}>
-                Add it and we’ll email you when the order is confirmed and when it’s on
-                the way.
+                Add it and we’ll email you when the order is confirmed, when it’s on
+                the way, and if it is cancelled.
               </span>
             </label>
           )}
@@ -1010,8 +1010,8 @@ export function OrderFlow({
           </p>
           {confirmationEmail ? (
             <p className={styles.nextStep}>
-              We’ll email {confirmationEmail} when the order is confirmed and again when it
-              leaves for delivery.
+              We’ll email {confirmationEmail} when the order is confirmed, when it
+              leaves for delivery, and if it is cancelled.
             </p>
           ) : null}
           {user ? (

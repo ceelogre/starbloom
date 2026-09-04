@@ -12,7 +12,7 @@ import {
   SECTION_TITLE_STYLE,
 } from '../_shared/email-layout.ts'
 
-export type NotifiableStatus = 'confirmed' | 'out_for_delivery'
+export type NotifiableStatus = 'confirmed' | 'out_for_delivery' | 'cancelled'
 
 export type OrderRow = {
   order_number: string
@@ -21,6 +21,7 @@ export type OrderRow = {
   phone: string
   address: string
   instructions: string
+  cancelled_reason: string | null
   payment_method: string
   subtotal: number
   delivery_fee: number
@@ -91,17 +92,30 @@ function trackUrl(order: OrderRow, siteUrl: string | undefined) {
   return order.customer_id && siteUrl ? `${siteUrl.replace(/\/$/, '')}/orders` : null
 }
 
-function footerHtml(order: OrderRow, siteUrl: string | undefined) {
+function footerHtml(order: OrderRow, siteUrl: string | undefined, afterCancel = false) {
   const url = trackUrl(order, siteUrl)
+  const followUp = afterCancel
+    ? 'Reply to this email if you did not expect this.'
+    : 'or reply to this email if anything needs changing.'
+
   if (!url) {
-    return REPLY_LINE
+    return afterCancel ? followUp : REPLY_LINE
   }
 
-  return `<a href="${escapeHtml(url)}" style="${CTA_STYLE}">Track this order</a><br /><span style="display:inline-block;margin-top:10px">or reply to this email if anything needs changing.</span>`
+  if (afterCancel) {
+    return `<a href="${escapeHtml(url)}" style="${CTA_STYLE}">See this order</a><br /><span style="display:inline-block;margin-top:10px">${followUp}</span>`
+  }
+
+  return `<a href="${escapeHtml(url)}" style="${CTA_STYLE}">Track this order</a><br /><span style="display:inline-block;margin-top:10px">${followUp}</span>`
 }
 
-function footerText(order: OrderRow, siteUrl: string | undefined) {
+function footerText(order: OrderRow, siteUrl: string | undefined, afterCancel = false) {
   const url = trackUrl(order, siteUrl)
+  if (afterCancel) {
+    return url
+      ? `See this order: ${url}\nReply to this email if you did not expect this.`
+      : 'Reply to this email if you did not expect this.'
+  }
   return url ? `Track this order: ${url}` : REPLY_LINE
 }
 
@@ -204,13 +218,64 @@ function outForDeliveryEmail(
   }
 }
 
+function cancelledEmail(
+  order: OrderRow,
+  items: OrderItemRow[],
+  siteUrl: string | undefined,
+): Email {
+  const name = order.customer_name.split(' ')[0] || 'there'
+  const reason = order.cancelled_reason?.trim() ?? ''
+
+  const body = `
+    <div style="${SECTION_STYLE}">
+      <h2 style="${SECTION_TITLE_STYLE}">Your order</h2>
+      <ul style="margin:0 0 16px;padding-left:20px">${itemsHtml(items)}</ul>
+      ${totalsHtml(order)}
+    </div>
+    ${
+      reason
+        ? `<div style="${SECTION_STYLE}">
+      <h2 style="${SECTION_TITLE_STYLE}">Why</h2>
+      <p style="margin:0">${escapeHtml(reason)}</p>
+    </div>`
+        : ''
+    }`
+
+  const text = [
+    `Hi ${name}, order ${order.order_number} has been cancelled.`,
+    '',
+    ...items.map((item) => `- ${lineLabel(item)}`),
+    '',
+    `Total: ${formatPrice(order.total)}`,
+    ...(reason ? ['', `Why: ${reason}`] : []),
+    '',
+    'Nothing is due.',
+    footerText(order, siteUrl, true),
+  ].join('\n')
+
+  return {
+    subject: `Order ${order.order_number} was cancelled`,
+    html: layout({
+      heading: `Order ${escapeHtml(order.order_number)} was cancelled`,
+      lead: `Hi ${escapeHtml(name)}, this order will not be delivered. Nothing is due.`,
+      body,
+      footer: footerHtml(order, siteUrl, true),
+    }),
+    text,
+  }
+}
+
 export function buildEmail(
   status: NotifiableStatus,
   order: OrderRow,
   items: OrderItemRow[],
   siteUrl: string | undefined,
 ): Email {
-  return status === 'confirmed'
-    ? confirmedEmail(order, items, siteUrl)
-    : outForDeliveryEmail(order, siteUrl)
+  if (status === 'confirmed') {
+    return confirmedEmail(order, items, siteUrl)
+  }
+  if (status === 'out_for_delivery') {
+    return outForDeliveryEmail(order, siteUrl)
+  }
+  return cancelledEmail(order, items, siteUrl)
 }
