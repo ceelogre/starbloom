@@ -1,7 +1,7 @@
 export const BRAND_NAME = 'Starbloom'
-export const TAGLINE = 'Fresh into flavor'
+export const TAGLINE = 'Sizzle into flavor'
 export const CITY = 'Kigali'
-export const SITE_TITLE = 'Starbloom — Fresh into flavor'
+export const SITE_TITLE = 'Starbloom — Sizzle into flavor'
 export const SITE_DESCRIPTION =
   'Order sausage, pork ribs, and ham for delivery in Kigali. Pay on delivery. VAT included.'
 
